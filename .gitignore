@@ -1,0 +1,5 @@
+# Input contracts downloaded from external sources
+/input/sources/
+
+# Files produced by the pipeline
+/output/
