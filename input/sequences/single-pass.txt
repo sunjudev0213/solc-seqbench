@@ -1,0 +1,20 @@
+# Default sequence from solc 0.8.24 with only a single iteration of the main loop
+
+dhfoDgvulfnTUtnIf               # None of these can make stack problems worse
+
+xa[r]EscLM                      # Turn into SSA and simplify
+cCTUtTOntnfDIul                 # Perform structural simplification
+Lcul                            # Simplify again
+Vcul [j]                        # Reverse SSA
+
+# should have good "compilability" property here.
+
+Tpeul                           # Run functional expression inliner
+xa[rul]                         # Prune a bit more in SSA
+xa[r]cL                         # Turn into SSA again and simplify
+gvif                            # Run full inliner
+CTUca[r]LSsTFOtfDnca[r]Iulc     # SSA plus simplify
+
+jmul[jul] VcTOcul jmul          # Make source short and pretty
+
+fDnTOcmu                        # Cleanup sequence
