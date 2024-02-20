@@ -10,10 +10,15 @@
 - click (Python)
 - pandas (Python)
 - matplotlib (Python)
+- cmake
+- gcc
 
 ## How to run
 ```bash
 ./download-sources.sh
+```
+```bash
+make solc
 ```
 ```bash
 ./start-anvil.sh

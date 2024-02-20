@@ -1,0 +1,279 @@
+From 6182cbf17d7ecd91aac51bef7e788352893f807b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Kamil=20=C5=9Aliwak?= <kamil.sliwak@codepoets.it>
+Date: Mon, 19 Feb 2024 20:58:43 +0100
+Subject: [PATCH] Patch OptimizerSuite to dump info about exact steps used by
+ the optimizer and their timing
+
+---
+ libyul/YulStack.cpp        | 55 ++++++++++++++++++++++++++++++++++++++
+ libyul/optimiser/Suite.cpp | 43 +++++++++++++++++------------
+ libyul/optimiser/Suite.h   | 14 ++++++++--
+ test/tools/yulopti.cpp     |  5 ++--
+ 4 files changed, 96 insertions(+), 21 deletions(-)
+
+diff --git a/libyul/YulStack.cpp b/libyul/YulStack.cpp
+index 6c89cadbd..745953fca 100644
+--- a/libyul/YulStack.cpp
++++ b/libyul/YulStack.cpp
+@@ -35,9 +35,12 @@
+ #include <libevmasm/Assembly.h>
+ #include <liblangutil/Scanner.h>
+ #include <libsolidity/interface/OptimiserSettings.h>
++#include <libsolutil/JSON.h>
+ 
+ #include <boost/algorithm/string.hpp>
+ 
++#include <cstdlib>
++#include <fstream>
+ #include <optional>
+ 
+ using namespace solidity;
+@@ -86,6 +89,57 @@ bool YulStack::parseAndAnalyze(std::string const& _sourceName, std::string const
+ 	return analyzeParsed();
+ }
+ 
++namespace
++{
++
++void dumpSequenceInfo()
++{
++	char const* enabled = std::getenv("SOLC_DUMP_SEQUENCE_INFO");
++	if (enabled == nullptr || std::string(enabled) != "1")
++		return;
++
++	solAssert(OptimiserSuite::s_sequenceInfo.size() == OptimiserSuite::s_cleanupSequenceStart.size());
++	Json::Value sequenceInfoList;
++	for (size_t runIndex = 0; runIndex < OptimiserSuite::s_sequenceInfo.size(); ++runIndex)
++	{
++		if (OptimiserSuite::s_cleanupSequenceStart[runIndex].has_value())
++			solAssert(*OptimiserSuite::s_cleanupSequenceStart[runIndex] < OptimiserSuite::s_sequenceInfo[runIndex].size());
++
++		Json::Value sequenceInfo;
++		std::string flattenedSequence;
++		std::string flattenedSequenceNoHardcoded;
++		for (size_t stepIndex = 0; stepIndex < OptimiserSuite::s_sequenceInfo[runIndex].size(); ++stepIndex)
++		{
++
++			Json::Value stepInfo;
++			// Index 0 is reserved for the unoptimized code
++			stepInfo["index"] = stepIndex + 1;
++			stepInfo["step"] = std::string{OptimiserSuite::s_sequenceInfo[runIndex][stepIndex].abbreviation};
++			stepInfo["duration_microsec"] = OptimiserSuite::s_sequenceInfo[runIndex][stepIndex].duration;
++			stepInfo["hardcoded"] = OptimiserSuite::s_sequenceInfo[runIndex][stepIndex].hardcoded;
++			sequenceInfo["steps"].append(stepInfo);
++
++			if (OptimiserSuite::s_cleanupSequenceStart[runIndex] == stepIndex)
++			{
++				flattenedSequence += ":";
++				flattenedSequenceNoHardcoded += ":";
++			}
++
++			flattenedSequence += OptimiserSuite::s_sequenceInfo[runIndex][stepIndex].abbreviation;
++			if (!OptimiserSuite::s_sequenceInfo[runIndex][stepIndex].hardcoded)
++				flattenedSequenceNoHardcoded += OptimiserSuite::s_sequenceInfo[runIndex][stepIndex].abbreviation;
++		}
++		sequenceInfo["flattened_sequence"] = flattenedSequence;
++		sequenceInfo["flattened_sequence_no_hardcoded"] = flattenedSequenceNoHardcoded;
++		sequenceInfoList.append(sequenceInfo);
++	}
++
++	std::ofstream sequenceInfoFile("sequence-info.json");
++	sequenceInfoFile << util::jsonPrint(sequenceInfoList, util::JsonFormat{util::JsonFormat::Pretty, 4}) << std::endl;
++}
++
++}
++
+ void YulStack::optimize()
+ {
+ 	yulAssert(m_analysisSuccessful, "Analysis was not successful.");
+@@ -100,6 +154,7 @@ void YulStack::optimize()
+ 	m_analysisSuccessful = false;
+ 	yulAssert(m_parserResult, "");
+ 	optimize(*m_parserResult, true);
++	dumpSequenceInfo();
+ 	yulAssert(analyzeParsed(), "Invalid source code after optimization.");
+ }
+ 
+diff --git a/libyul/optimiser/Suite.cpp b/libyul/optimiser/Suite.cpp
+index 1aaef4270..6edd43dcf 100644
+--- a/libyul/optimiser/Suite.cpp
++++ b/libyul/optimiser/Suite.cpp
+@@ -81,18 +81,19 @@
+ #include <limits>
+ #include <tuple>
+ 
+-#ifdef PROFILE_OPTIMIZER_STEPS
+ #include <chrono>
++#ifdef PROFILE_OPTIMIZER_STEPS
+ #include <fmt/format.h>
+ #endif
+ 
+ using namespace solidity;
+ using namespace solidity::yul;
+-#ifdef PROFILE_OPTIMIZER_STEPS
+ using namespace std::chrono;
+-#endif
+ using namespace std::string_literals;
+ 
++std::vector<std::vector<OptimiserSuite::StepInfo>> OptimiserSuite::s_sequenceInfo;
++std::vector<std::optional<size_t>> OptimiserSuite::s_cleanupSequenceStart;
++
+ namespace
+ {
+ 
+@@ -163,17 +164,20 @@ void OptimiserSuite::run(
+ 
+ 	OptimiserSuite suite(context, Debug::None);
+ 
++	s_sequenceInfo.emplace_back();
++	s_cleanupSequenceStart.emplace_back(std::nullopt);
++
+ 	// Some steps depend on properties ensured by FunctionHoister, BlockFlattener, FunctionGrouper and
+ 	// ForLoopInitRewriter. Run them first to be able to run arbitrary sequences safely.
+-	suite.runSequence("hgfo", ast);
++	suite.runSequence("hgfo", ast, true);
+ 
+ 	NameSimplifier::run(suite.m_context, ast);
+ 	// Now the user-supplied part
+-	suite.runSequence(_optimisationSequence, ast);
++	suite.runSequence(_optimisationSequence, ast, false);
+ 
+ 	// This is a tuning parameter, but actually just prevents infinite loops.
+ 	size_t stackCompressorMaxIterations = 16;
+-	suite.runSequence("g", ast);
++	suite.runSequence("g", ast, true);
+ 
+ 	// We ignore the return value because we will get a much better error
+ 	// message once we perform code generation.
+@@ -185,12 +189,14 @@ void OptimiserSuite::run(
+ 			stackCompressorMaxIterations
+ 		);
+ 
++	s_cleanupSequenceStart[s_cleanupSequenceStart.size() - 1] = s_sequenceInfo[s_cleanupSequenceStart.size() - 1].size();
++
+ 	// Run the user-supplied clean up sequence
+-	suite.runSequence(_optimisationCleanupSequence, ast);
++	suite.runSequence(_optimisationCleanupSequence, ast, false);
+ 	// Hard-coded FunctionGrouper step is used to bring the AST into a canonical form required by the StackCompressor
+ 	// and StackLimitEvader. This is hard-coded as the last step, as some previously executed steps may break the
+ 	// aforementioned form, thus causing the StackCompressor/StackLimitEvader to throw.
+-	suite.runSequence("g", ast);
++	suite.runSequence("g", ast, true);
+ 
+ 	if (evmDialect)
+ 	{
+@@ -402,7 +408,7 @@ bool OptimiserSuite::isEmptyOptimizerSequence(std::string const& _sequence)
+ 	return true;
+ }
+ 
+-void OptimiserSuite::runSequence(std::string_view _stepAbbreviations, Block& _ast, bool _repeatUntilStable)
++void OptimiserSuite::runSequence(std::string_view _stepAbbreviations, Block& _ast, bool _isHardcoded, bool _repeatUntilStable)
+ {
+ 	validateSequence(_stepAbbreviations);
+ 
+@@ -478,9 +484,9 @@ void OptimiserSuite::runSequence(std::string_view _stepAbbreviations, Block& _as
+ 		for (auto const& [subsequence, repeat]: subsequences)
+ 		{
+ 			if (repeat)
+-				runSequence(subsequence, _ast, true);
++				runSequence(subsequence, _ast, _isHardcoded, true);
+ 			else
+-				runSequence(abbreviationsToSteps(subsequence), _ast);
++				runSequence(abbreviationsToSteps(subsequence), _ast, _isHardcoded);
+ 		}
+ 
+ 		if (!_repeatUntilStable)
+@@ -493,7 +499,7 @@ void OptimiserSuite::runSequence(std::string_view _stepAbbreviations, Block& _as
+ 	}
+ }
+ 
+-void OptimiserSuite::runSequence(std::vector<std::string> const& _steps, Block& _ast)
++void OptimiserSuite::runSequence(std::vector<std::string> const& _steps, Block& _ast, bool _isHardcoded)
+ {
+ 	std::unique_ptr<Block> copy;
+ 	if (m_debug == Debug::PrintChanges)
+@@ -502,14 +508,9 @@ void OptimiserSuite::runSequence(std::vector<std::string> const& _steps, Block&
+ 	{
+ 		if (m_debug == Debug::PrintStep)
+ 			std::cout << "Running " << step << std::endl;
+-#ifdef PROFILE_OPTIMIZER_STEPS
+ 		steady_clock::time_point startTime = steady_clock::now();
+-#endif
+ 		allSteps().at(step)->run(m_context, _ast);
+-#ifdef PROFILE_OPTIMIZER_STEPS
+ 		steady_clock::time_point endTime = steady_clock::now();
+-		m_durationPerStepInMicroseconds[step] += duration_cast<microseconds>(endTime - startTime).count();
+-#endif
+ 		if (m_debug == Debug::PrintChanges)
+ 		{
+ 			// TODO should add switch to also compare variable names!
+@@ -522,5 +523,13 @@ void OptimiserSuite::runSequence(std::vector<std::string> const& _steps, Block&
+ 				copy = std::make_unique<Block>(std::get<Block>(ASTCopier{}(_ast)));
+ 			}
+ 		}
++
++		static std::map<std::string, char> abbreviations = stepNameToAbbreviationMap();
++		solAssert(OptimiserSuite::s_sequenceInfo.size() > 0);
++		OptimiserSuite::s_sequenceInfo[OptimiserSuite::s_sequenceInfo.size() - 1].push_back({
++			abbreviations.at(step),
++			duration_cast<microseconds>(endTime - startTime).count(),
++			_isHardcoded
++		});
+ 	}
+ }
+diff --git a/libyul/optimiser/Suite.h b/libyul/optimiser/Suite.h
+index 6e3886da3..ec9d9128e 100644
+--- a/libyul/optimiser/Suite.h
++++ b/libyul/optimiser/Suite.h
+@@ -81,13 +81,23 @@ public:
+ 	static bool isEmptyOptimizerSequence(std::string const& _sequence);
+ 
+ 
+-	void runSequence(std::vector<std::string> const& _steps, Block& _ast);
+-	void runSequence(std::string_view _stepAbbreviations, Block& _ast, bool _repeatUntilStable = false);
++	void runSequence(std::vector<std::string> const& _steps, Block& _ast, bool _isHardcoded);
++	void runSequence(std::string_view _stepAbbreviations, Block& _ast, bool _isHardcoded, bool _repeatUntilStable = false);
+ 
+ 	static std::map<std::string, std::unique_ptr<OptimiserStep>> const& allSteps();
+ 	static std::map<std::string, char> const& stepNameToAbbreviationMap();
+ 	static std::map<char, std::string> const& stepAbbreviationToNameMap();
+ 
++public:
++	struct StepInfo
++	{
++		char abbreviation;
++		int64_t duration;
++		bool hardcoded;
++	};
++	static std::vector<std::vector<StepInfo>> s_sequenceInfo;
++	static std::vector<std::optional<size_t>> s_cleanupSequenceStart;
++
+ private:
+ 	OptimiserStepContext& m_context;
+ 	Debug m_debug;
+diff --git a/test/tools/yulopti.cpp b/test/tools/yulopti.cpp
+index 20491afe1..a405b8664 100644
+--- a/test/tools/yulopti.cpp
++++ b/test/tools/yulopti.cpp
+@@ -181,7 +181,7 @@ public:
+ 	{
+ 		parse(_source);
+ 		disambiguate();
+-		OptimiserSuite{m_context}.runSequence(_steps, *m_ast);
++		OptimiserSuite{m_context}.runSequence(_steps, *m_ast, false);
+ 		cout << AsmPrinter{m_dialect}(*m_ast) << endl;
+ 	}
+ 
+@@ -227,7 +227,8 @@ public:
+ 					default:
+ 						OptimiserSuite{m_context}.runSequence(
+ 							std::string_view(&option, 1),
+-							*m_ast
++							*m_ast,
++							false
+ 						);
+ 				}
+ 				_source = AsmPrinter{m_dialect}(*m_ast);
+-- 
+2.43.2
+

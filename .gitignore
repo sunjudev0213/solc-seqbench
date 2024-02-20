@@ -1,5 +1,10 @@
-# Input contracts downloaded from external sources
+# Downloaded external sources
 /input/sources/
+/solidity/
+
+# Intermediate files
+/sequence-info.json
 
 # Files produced by the pipeline
 /output/
+/solc
