@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 import click
 
@@ -25,13 +26,26 @@ def deploy_contract(bytecode: str, private_key: str) -> dict:
     ]).decode('utf-8'))
 
 
-def call_contract(address: str, call_signature_and_arguments: list[str], private_key: str) -> dict:
-    return json.loads(subprocess.check_output([
+def call_contract(address: str, call_signature_and_arguments: list[str], private_key: str) -> dict | str:
+    command = [
         'cast', 'send',
         '--json',
         '--private-key', private_key,
         address,
-    ] + call_signature_and_arguments).decode('utf-8'))
+    ] + call_signature_and_arguments
+
+    try:
+        output = subprocess.check_output(command, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as exception:
+        if '(code: 3, message: execution reverted, data: Some(String("0x")))' in exception.stderr.decode('utf-8').strip():
+            return 'execution-reverted'
+        elif '(code: -32603, message: EVM error InvalidFEOpcode, data: None)' in exception.stderr.decode('utf-8').strip():
+            return 'invalid-fe-opcode'
+        else:
+            print(exception.stderr.decode('utf-8'), file=sys.stderr)
+        raise
+
+    return json.loads(output.decode('utf-8'))
 
 
 def load_calls(call_definition_file: Path) -> list[list[str]]:
@@ -77,13 +91,20 @@ def execute_all_steps(bin_dir: Path, call_definition_file: Path, output_dir: Pat
             for call in calls:
                 print(f"Executing call: {' '.join(call)}")
                 runtime_info = call_contract(creation_info['contractAddress'], call, private_key)
-                runtime_gas += int(runtime_info['cumulativeGasUsed'], base=16)
+                if isinstance(runtime_info, str):
+                    runtime_gas = None
+                    execution_status = runtime_info
+                    break
+                else:
+                    runtime_gas += int(runtime_info['cumulativeGasUsed'], base=16)
+                    execution_status = 'success'
 
             output = json.dumps({
                 'file': dir_item.name,
                 'bytecode_size': len(bytecode) // 2,
                 'creation_gas': int(creation_info['cumulativeGasUsed'], base=16),
                 'runtime_gas': runtime_gas,
+                'execution_status': execution_status,
             }, indent=4)
             print(output)
             output_file.write_text(output)
