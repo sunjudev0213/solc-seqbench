@@ -1,4 +1,0 @@
-f()
-g()
-pair()
-verifyTx()
