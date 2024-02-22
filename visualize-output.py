@@ -100,6 +100,8 @@ def main(
         add_plot_vs_index('step-duration', 'duration_microsec', 'time (microseconds)', 'Duration of each step', style='bar')
         add_plot_vs_index('optimization-time', 'optimization_time', 'time (microseconds)', 'Cumulative optimization time after each step')
 
+    add_plot_vs_index('compilation-time', 'compilation_time', 'time (seconds)', 'Compilation time with a prefix ending at this step')
+
     formatted_table_and_figures += f"\n\n{formatted_table}\n"
 
     with open(Path(output_dir) / f'{name_prefix}table.md', 'w') as table_file:

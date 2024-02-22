@@ -122,7 +122,7 @@ def main(
     require(len(unknown_steps) == 0, f"Unknown steps in the sequence: {unknown_steps}")
     merged_table = pandas.merge(merged_table, step_table, left_on='step', right_index=True, how='inner').sort_index()
 
-    selected_columns = ['step', 'step_name', 'bytecode_size', 'creation_gas', 'runtime_gas']
+    selected_columns = ['step', 'step_name', 'bytecode_size', 'creation_gas', 'runtime_gas', 'compilation_time']
     if sequence_info_path is not None:
         selected_columns += ['duration_microsec', 'optimization_time']
         # Replace empty values with 0 because they force column type to float.
