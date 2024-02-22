@@ -17,4 +17,4 @@ dhfoDgvulfnTUtnIf                # None of these can make stack problems worse
 ]
 jmul[jul] VcTOcul jmul           # Make source short and pretty
 
-fDnTOcmu                         # Cleanup sequence
+:fDnTOcmu                        # Cleanup sequence

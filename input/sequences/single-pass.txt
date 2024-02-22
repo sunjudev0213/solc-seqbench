@@ -17,4 +17,4 @@ CTUca[r]LSsTFOtfDnca[r]Iulc     # SSA plus simplify
 
 jmul[jul] VcTOcul jmul          # Make source short and pretty
 
-fDnTOcmu                        # Cleanup sequence
+:fDnTOcmu                       # Cleanup sequence

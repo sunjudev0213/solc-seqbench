@@ -1,3 +1,3 @@
 # A short sequence, useful mostly for testing the seqbench itself.
 
-fDnT
+fD:nT
