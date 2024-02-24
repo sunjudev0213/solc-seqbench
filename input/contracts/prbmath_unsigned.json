@@ -7,6 +7,10 @@
     },
     "settings": {
         "outputSelection": {"prbmath_unsigned.sol": {"test": ["ir"]}},
-        "debug": {"debugInfo": []}
+        "debug": {"debugInfo": []},
+        "libraries": {
+            "_prbmath/PRBMathCommon.sol": {"PRBMathCommon": "0x0000000000000000000000000000000000000000"},
+            "_prbmath/PRBMathUD60x18.sol": {"PRBMathUD60x18": "0x0000000000000000000000000000000000000000"}
+        }
     }
 }
