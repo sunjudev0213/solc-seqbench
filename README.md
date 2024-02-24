@@ -26,3 +26,19 @@ make solc
 ```bash
 make
 ```
+
+### Convenience targets
+Build for a single sequence and all contracts:
+```bash
+make sequence-<sequence name>
+```
+
+Build for all sequences and a single contract:
+```bash
+make contract-<contract name>
+```
+
+Build for a single sequence and a single contract:
+```bash
+make sequence-<sequence name>/contract-<contract name>
+```

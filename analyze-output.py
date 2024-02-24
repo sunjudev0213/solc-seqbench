@@ -97,7 +97,8 @@ def main(
         sequence_table.set_index(['index'], inplace=True)
         sequence_table.reset_index(inplace=True)
         sequence_table.index += 1
-        require((sequence_table.index == execution_table.index[1:]).all(), "Step indexes in sequence info do not match execution info.")
+        # NOTE: Execution info may be missing info for some steps if compilation or execution failed
+        require((execution_table.index[1:].isin(sequence_table.index)).all(), "Step indexes in sequence info do not match execution info.")
 
     step_table = DataFrame({
         'step': STEP_NAMES.keys(),
@@ -107,7 +108,10 @@ def main(
 
     merged_table = pandas.merge(optimization_table, execution_table, on='index', how='outer')
     if sequence_info_path is not None:
-        require((optimization_table['step'][1:] == sequence_table['step']).all(), "Steps in sequence info do not match optimization info.")
+        require((
+            (optimization_table['step'][1:] == sequence_table['step']) |
+            optimization_table['step'][1:].isna()
+        ).all(), "Steps in sequence info do not match optimization info.")
         merged_table = pandas.merge(
             merged_table,
             # Step columns are identical except for index 0, where sequence_table is missing an item. Not dropping the column

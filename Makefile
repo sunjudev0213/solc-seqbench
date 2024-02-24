@@ -42,6 +42,9 @@ all_sequence_call_reports_json := \
         ) \
     )
 
+all_sequence_tables := $(foreach sequence, $(sequences), output/analysis/$(sequence)/table.md)
+all_contract_tables := $(foreach contract, $(contracts), output/analysis-per-contract/$(contract)/table.md)
+
 # Convenience targets for selecting specific contracts/sequences
 all_sequence_targets := $(foreach sequence, $(sequences), sequence-$(sequence))
 all_contract_targets := $(foreach contract, $(contracts), contract-$(contract))
@@ -63,7 +66,8 @@ all_sequence_contract_targets := \
 all: \
     output/optimization.json \
     output/execution.json \
-    $(all_sequence_targets)
+    $(all_sequence_targets) \
+    $(all_contract_targets)
 
 unoptimized-ir: $(foreach c, $(contracts), output/contracts/$(c).yul)
 
@@ -188,8 +192,40 @@ $(all_sequence_call_reports_json:%/report.json=%/table.md): %/table.md: %/report
 		--output-dir "$(dir $@)" \
 		--document-title "$*"
 
-$(all_sequence_targets): sequence-%: $$(foreach call, $$(calls), output/analysis/$$*/$$(call)/table.md)
-$(all_contract_targets): contract-%: $$(foreach sequence, $$(sequences), sequence-$$(sequence)/contract-$$*)
+$(all_sequence_tables): \
+    output/analysis/%/table.md: \
+        $$(foreach call, $$(calls), output/analysis/$$*/$$(call)/report.json) \
+        visualize-output.py
+	reports_and_names=($(foreach call, $(calls), output/analysis/$*/$(call)/report.json --report-name $(call)))
+
+	./visualize-output.py \
+		"$${reports_and_names[@]}" \
+		--output-dir "$(dir $@)" \
+		--document-title "Sequence $*, all contracts and calls"
+
+$(all_contract_tables): \
+    output/analysis-per-contract/%/table.md: \
+        $$(foreach call, $$(filter $$*/$$(percent), $$(calls)), \
+            $$(foreach sequence, $$(sequences), \
+                output/analysis/$$(sequence)/$$(call)/report.json \
+            ) \
+        ) \
+        visualize-output.py
+	reports_and_names=(
+		$(foreach call, $(filter $*/%, $(calls)), \
+			$(foreach sequence, $(sequences), \
+				output/analysis/$(sequence)/$(call)/report.json --report-name $(sequence)/$(patsubst $*/%,%, $(call))\
+			) \
+		)
+	)
+
+	./visualize-output.py \
+		"$${reports_and_names[@]}" \
+		--output-dir "$(dir $@)" \
+		--document-title "Contract $*, all sequences and calls"
+
+$(all_sequence_targets): sequence-%: output/analysis/$$*/table.md
+$(all_contract_targets): contract-%: output/analysis-per-contract/$$*/table.md
 
 $(all_sequence_contract_targets): \
     %: \
