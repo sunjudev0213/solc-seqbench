@@ -190,7 +190,8 @@ $(all_sequence_call_reports_json:%/report.json=%/table.md): %/table.md: %/report
 	./visualize-output.py \
 		"$<" \
 		--output-dir "$(dir $@)" \
-		--document-title "$*"
+		--document-title "$*" \
+		$(EXTRA_VISUALIZE_ARGS)
 
 $(all_sequence_tables): \
     output/analysis/%/table.md: \
@@ -201,7 +202,8 @@ $(all_sequence_tables): \
 	./visualize-output.py \
 		"$${reports_and_names[@]}" \
 		--output-dir "$(dir $@)" \
-		--document-title "Sequence $*, all contracts and calls"
+		--document-title "Sequence $*, all contracts and calls" \
+		$(EXTRA_VISUALIZE_ARGS)
 
 $(all_contract_tables): \
     output/analysis-per-contract/%/table.md: \
@@ -222,7 +224,8 @@ $(all_contract_tables): \
 	./visualize-output.py \
 		"$${reports_and_names[@]}" \
 		--output-dir "$(dir $@)" \
-		--document-title "Contract $*, all sequences and calls"
+		--document-title "Contract $*, all sequences and calls" \
+		$(EXTRA_VISUALIZE_ARGS)
 
 $(all_sequence_targets): sequence-%: output/analysis/$$*/table.md
 $(all_contract_targets): contract-%: output/analysis-per-contract/$$*/table.md
