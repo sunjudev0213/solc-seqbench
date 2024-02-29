@@ -1,0 +1,10 @@
+{
+    "language": "Solidity",
+    "sources": {
+        "deposit_contract.sol": {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/deposit_contract.sol"]}
+    },
+    "settings": {
+        "outputSelection": {"deposit_contract.sol": {"DepositContract": ["ir"]}},
+        "debug": {"debugInfo": []}
+    }
+}
