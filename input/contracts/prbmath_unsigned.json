@@ -1,0 +1,12 @@
+{
+    "language": "Solidity",
+    "sources": {
+        "prbmath_unsigned.sol":        {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/prbmath_unsigned.sol"]},
+        "_prbmath/PRBMathCommon.sol":  {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/_prbmath/PRBMathCommon.sol"]},
+        "_prbmath/PRBMathUD60x18.sol": {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/_prbmath/PRBMathUD60x18.sol"]}
+    },
+    "settings": {
+        "outputSelection": {"prbmath_unsigned.sol": {"test": ["ir"]}},
+        "debug": {"debugInfo": []}
+    }
+}

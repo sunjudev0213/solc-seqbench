@@ -1,0 +1,5 @@
+toSlice(string)             hello_world
+roundtrip(string)           hello_world
+utf8len(string)             😃😃😃😃
+multiconcat(string,uint256) hello_world 3
+#benchmark(string,bytes32)  solidity 0x0842021

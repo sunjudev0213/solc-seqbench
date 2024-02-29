@@ -1,0 +1,12 @@
+{
+    "language": "Solidity",
+    "sources": {
+        "ramanujan_pi.sol":            {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/ramanujan_pi.sol"]},
+        "_prbmath/PRBMathCommon.sol":  {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/_prbmath/PRBMathCommon.sol"]},
+        "_prbmath/PRBMathSD59x18.sol": {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/_prbmath/PRBMathSD59x18.sol"]}
+    },
+    "settings": {
+        "outputSelection": {"ramanujan_pi.sol": {"test": ["ir"]}},
+        "debug": {"debugInfo": []}
+    }
+}

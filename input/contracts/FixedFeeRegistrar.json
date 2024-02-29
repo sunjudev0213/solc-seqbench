@@ -1,0 +1,11 @@
+{
+    "language": "Solidity",
+    "sources": {
+        "FixedFeeRegistrar.sol": {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/FixedFeeRegistrar.sol"]}
+    },
+    "settings": {
+        "outputSelection": {"FixedFeeRegistrar.sol": {"FixedFeeRegistrar": ["ir"]}},
+        "debug": {"debugInfo": []}
+    }
+}
+

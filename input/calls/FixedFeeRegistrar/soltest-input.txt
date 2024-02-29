@@ -1,0 +1,23 @@
+reserve(string)                 abc --value 69ether
+owner(string)                   abc
+reserve(string)                 def --value 70ether
+owner(string)                   def
+reserve(string)                 ghi --value 68ether
+owner(string)                   ghi
+reserve(string)                 abc --value 69ether
+owner(string)                   abc
+setContent(string,bytes32)      abc 0x00000000
+transfer(string,address):       abc 0x0000000000000000000000000000000000000555
+owner(string)                   abc
+content(string)                 abc
+setContent(string,bytes32)      def 0x0000000000000000000000000000000000000333
+setAddr(string,address)         def 0x0000000000000000000000000000000000000124
+setSubRegistrar(string,address) def 0x0000000000000000000000000000000000000125
+content(string)                 def
+addr(string)                    def
+subRegistrar(string)            def
+disown(string,address)          def 0x0000000000000000000000000000000000000124
+owner(string)                   def
+content(string)                 def
+addr(string)                    def
+subRegistrar(string)            def

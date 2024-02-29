@@ -1,0 +1,11 @@
+{
+    "language": "Solidity",
+    "sources": {
+        "strings.sol":                  {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/strings.sol"]},
+        "_stringutils/stringutils.sol": {"urls": ["../sources/solidity/test/libsolidity/semanticTests/externalContracts/_stringutils/stringutils.sol"]}
+    },
+    "settings": {
+        "outputSelection": {"strings.sol": {"test": ["ir"]}},
+        "debug": {"debugInfo": []}
+    }
+}
