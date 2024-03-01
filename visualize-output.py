@@ -183,11 +183,11 @@ def main(
                     print(formatted_table)
                 document += formatted_table + '\n\n'
 
-    with open(Path(output_dir) / f'{name_prefix}report.md', 'w') as document_file:
-        document_file.write(document)
-
     if show_plot:
         plt.show()
+
+    with open(Path(output_dir) / f'{name_prefix}report.md', 'w') as document_file:
+        document_file.write(document)
 
 
 if __name__ == '__main__':
