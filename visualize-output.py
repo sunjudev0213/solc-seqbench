@@ -174,7 +174,7 @@ def main(
             document += f"### {report_name}\n\n"
         document += formatted_table + '\n\n'
     else:
-        for column in ['bytecode_size', 'creation_gas', 'runtime_gas', 'optimization_time', 'duration_microsec', 'compilation_time']:
+        for column in ['runtime_gas', 'bytecode_size', 'creation_gas', 'duration_microsec', 'optimization_time', 'compilation_time']:
             if column in tables[0].columns:
                 document += f"### {column}\n\n"
                 formatted_table = format_table(build_comparison_table(column, tables, report_name, shared_step_column=tables_have_compatible_steps))
