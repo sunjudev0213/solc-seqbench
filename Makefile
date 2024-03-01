@@ -124,7 +124,7 @@ $(all_sequence_contract_json): \
     output/contracts/$$(word 2, $$(subst /, , $$*)).yul \
     input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
     output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-sequence-info.json \
-    assemble-all-steps.py
+    assemble-all-prefixes.py
 
 	sequence_name="$(word 1, $(subst /, , $*))"
 	contract_name="$(word 2, $(subst /, , $*))"
@@ -135,7 +135,7 @@ $(all_sequence_contract_json): \
 	# For those steps that did not fail with StackTooDeep error, a .yul file is also generated.
 	output_dir="output/optimization/$${sequence_name}/$${contract_name}/"
 	rm -rf "./$${output_dir}/"
-	./assemble-all-steps.py "$<" "$$flattened_sequence" --output-dir "$$output_dir" --solc-binary "./solc"
+	./assemble-all-prefixes.py "$<" "$$flattened_sequence" --output-dir "$$output_dir" --solc-binary "./solc"
 
 	# Merge all the generated .json files to produce the target artifact.
 	jq --slurp . "$(basename $@)/"*.json --indent 4 > "$@"
@@ -149,7 +149,7 @@ $(all_sequence_call_json): \
         input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
         input/calls/$$(word 2, $$(subst /, , $$*))/$$(word 3, $$(subst /, , $$*)).txt \
         output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*)).json \
-        execute-all-steps.py
+        execute-all-prefixes.py
 
 	sequence_name="$(word 1, $(subst /, , $*))"
 	contract_name="$(word 2, $(subst /, , $*))"
@@ -159,7 +159,7 @@ $(all_sequence_call_json): \
 
 	output_dir="output/execution/$${sequence_name}/$${contract_name}/$${call_name}/"
 	rm -rf "./$${output_dir}/"
-	./execute-all-steps.py \
+	./execute-all-prefixes.py \
 		"output/optimization/$${sequence_name}/$${contract_name}/" \
 		"input/calls/$${contract_name}/$${call_name}.txt" \
 		--output-dir "$$output_dir" \
