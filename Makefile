@@ -58,7 +58,7 @@ all_sequence_contract_targets := \
 .PHONY: \
     all \
     clean \
-    unoptimized-yul \
+    assembly \
     optimization \
     execution \
     analysis \
@@ -68,7 +68,7 @@ all_sequence_contract_targets := \
 
 all: analysis
 
-unoptimized-yul: $(foreach c, $(contract_names), output/contracts/$(c).yul)
+assembly: $(foreach c, $(contract_names), output/contracts/$(c).yul)
 optimization: output/optimization-info.json
 execution: output/execution-info.json
 analysis: $(all_sequence_targets) $(all_contract_targets)
