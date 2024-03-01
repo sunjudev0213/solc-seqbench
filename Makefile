@@ -147,7 +147,6 @@ output/optimization-info.json: $(all_optimization_info_jsons)
 
 $(all_execution_info_jsons): \
     output/execution/%-execution-info.json: \
-        output/assembly/$$(word 2, $$(subst /, , $$*)).yul \
         input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
         input/calls/$$(word 2, $$(subst /, , $$*))/$$(word 3, $$(subst /, , $$*)).txt \
         output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-optimization-info.json \
