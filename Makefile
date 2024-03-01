@@ -166,7 +166,7 @@ $(all_execution_info_jsons): \
 		--private-key 0x60b139825a56a987d58b20f0145e05dc45bed12df72cb92812b5ea988383c987
 
 	# Merge all the generated .json files to produce the target artifact.
-	jq --slurp ."$(patsubst %-execution-info.json,%,$@)/"*.json --indent 4 > "$@"
+	jq --slurp . "$(patsubst %-execution-info.json,%,$@)/"*.json --indent 4 > "$@"
 
 output/execution-info.json: $(all_execution_info_jsons)
 	jq --null-input 'reduce inputs as $$s (.; .[input_filename] += $$s)' $^ --indent 4 > "$@"
