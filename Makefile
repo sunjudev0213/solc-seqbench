@@ -59,17 +59,18 @@ all_sequence_contract_targets := \
     all \
     clean \
     unoptimized-ir \
+    optimization \
+    execution \
     $(all_sequence_targets) \
     $(all_contract_targets) \
     $(all_sequence_contract_targets)
 
-all: \
-    output/optimization-info.json \
-    output/execution-info.json \
-    $(all_sequence_targets) \
-    $(all_contract_targets)
+all: analysis
 
 unoptimized-ir: $(foreach c, $(contract_names), output/contracts/$(c).yul)
+optimization: output/optimization-info.json
+execution: output/execution-info.json
+analysis: $(all_sequence_targets) $(all_contract_targets)
 
 solidity/: solc-sequence-info-dump.patch
 	branch="fix-superfluous-iterations-in-optimizer-sequence"
