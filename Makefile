@@ -13,6 +13,19 @@ call_names     := \
         ) \
     )
 
+plot_names := \
+    runtime-gas \
+    runtime-gas-vs-optimization-time \
+    bytecode-size \
+    bytecode-size-vs-optimization-time \
+    creation-gas \
+    creation-gas-vs-optimization-time \
+    step-duration \
+    optimization-time \
+    compilation-time
+
+plot_file_names := $(addsuffix .svg, $(plot_names))
+
 all_sequence_info_jsons := \
     $(foreach sequence, $(sequence_names), \
         $(foreach contract, $(contract_names), \
@@ -40,9 +53,6 @@ all_analysis_jsons := \
             output/analysis/$(sequence)/$(call)/report.json \
         ) \
     )
-
-all_per_sequence_reports := $(foreach sequence, $(sequence_names), output/analysis-per-sequence/$(sequence)/report.md)
-all_per_contract_reports := $(foreach contract, $(contract_names), output/analysis-per-contract/$(contract)/report.md)
 
 # Convenience targets for selecting specific contracts/sequences
 all_sequence_targets := $(foreach sequence, $(sequence_names), sequence-$(sequence))
@@ -82,14 +92,22 @@ $(foreach call, $(filter $(1)/%, $(call_names)), \
 )
 endef
 
+define report-files-matching-sequence-name
+$(addprefix output/analysis-per-sequence/$(1)/, report.md $(plot_file_names))
+endef
+
+define report-files-matching-contract-name
+$(addprefix output/analysis-per-contract/$(1)/, report.md $(plot_file_names))
+endef
+
 define call-names-matching-contract
 $(filter $(call contract-from-contract-sequence-target, $(1))/%, $(call_names))
 endef
 
-define reports-matching-sequence-contract-target
+define report-files-matching-sequence-contract-target
 $(foreach sequence, $(sequence_names), \
     $(foreach call, $(call call-names-matching-contract, $(1)), \
-        output/analysis/$(call sequence-from-contract-sequence-target, $(1))/$(call)/report.md \
+        $(addprefix output/analysis/$(call sequence-from-contract-sequence-target, $(1))/$(call)/, report.md $(plot_file_names)) \
     ) \
 )
 endef
@@ -227,17 +245,16 @@ $(all_analysis_jsons): \
 		"output/optimization/$${sequence_name}/$${contract_name}-sequence-info.json" \
 		--output-dir "$(dir $@)"
 
-$(all_analysis_jsons:%/report.json=%/report.md): %/report.md: %/report.json visualize-output.py
+$(addprefix output/analysis/%/, report.md $(plot_file_names)): output/analysis/%/report.json visualize-output.py
 	./visualize-output.py \
 		"$<" \
 		--output-dir "$(dir $@)" \
 		--document-title "$*" \
 		$(EXTRA_VISUALIZE_ARGS)
 
-$(all_per_sequence_reports): \
-    output/analysis-per-sequence/%/report.md: \
-        $$(foreach call, $$(call_names), output/analysis/$$*/$$(call)/report.json) \
-        visualize-output.py
+$(call report-files-matching-sequence-name,%): \
+    $$(foreach call, $$(call_names), output/analysis/$$*/$$(call)/report.json) \
+    visualize-output.py
 
 	reports_and_names=($(foreach call, $(call_names), output/analysis/$*/$(call)/report.json --report-name $(call)))
 
@@ -247,10 +264,9 @@ $(all_per_sequence_reports): \
 		--document-title "Sequence $*, all contracts and calls" \
 		$(EXTRA_VISUALIZE_ARGS)
 
-$(all_per_contract_reports): \
-    output/analysis-per-contract/%/report.md: \
-        $(call analysis-jsons-matching-contract-name, $*) \
-        visualize-output.py
+$(call report-files-matching-contract-name,%): \
+    $(call analysis-jsons-matching-contract-name, $*) \
+    visualize-output.py
 
 	reports_and_names=(
 		$(foreach call, $(filter $*/%, $(call_names)), \
@@ -266,10 +282,10 @@ $(all_per_contract_reports): \
 		--document-title "Contract $*, all sequences and calls" \
 		$(EXTRA_VISUALIZE_ARGS)
 
-$(all_sequence_targets): sequence-%: output/analysis-per-sequence/$$*/report.md
-$(all_contract_targets): contract-%: output/analysis-per-contract/$$*/report.md
+$(all_sequence_targets): sequence-%: $(call report-files-matching-sequence-name,$$*)
+$(all_contract_targets): contract-%: $(call report-files-matching-contract-name,$$*)
 
-$(all_sequence_contract_targets): %: $$(call reports-matching-sequence-contract-target, $$*)
+$(all_sequence_contract_targets): %: $$(call report-files-matching-sequence-contract-target, $$*)
 
 clean-output:
 	rm -rf output/
