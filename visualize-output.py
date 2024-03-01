@@ -9,14 +9,9 @@ from pandas import DataFrame
 import pandas
 from tabulate import tabulate
 
-
-def fail(message: str | None = None):
-    raise click.ClickException(click.style(message if message is not None else "Validation failed.", fg='red'))
-
-
-def require(condition: bool, message: str | None = None):
-    if not condition:
-        fail(message)
+import seqbench_helpers
+from seqbench_helpers import fail
+from seqbench_helpers import require
 
 
 def plot_column_with_step_labels(table: DataFrame, column_name: str, ylabel: str, title: str, style: str = 'line', origin_at_zero: bool = True):

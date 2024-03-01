@@ -7,14 +7,9 @@ import subprocess
 
 import click
 
-
-def fail(message: str | None = None):
-    raise click.ClickException(click.style(message if message is not None else "Validation failed.", fg='red'))
-
-
-def require(condition: bool, message: str | None = None):
-    if not condition:
-        fail(message)
+import seqbench_helpers
+from seqbench_helpers import fail
+from seqbench_helpers import require
 
 
 def extract_artifacts(json_output: str) -> (str, str, dict):

@@ -7,6 +7,10 @@ import click
 from pandas import DataFrame
 import pandas
 
+import seqbench_helpers
+from seqbench_helpers import fail
+from seqbench_helpers import require
+
 
 BIN_FILE_NAME_REGEX = re.compile(r'(.*)-step-(\d{5})(?:-([a-zA-Z]))?.bin')
 
@@ -44,15 +48,6 @@ STEP_NAMES = {
     'v': 'EquivalentFunctionCombiner',
     'x': 'ExpressionSplitter',
 }
-
-
-def fail(message: str | None = None):
-    raise click.ClickException(click.style(message if message is not None else "Validation failed.", fg='red'))
-
-
-def require(condition: bool, message: str | None = None):
-    if not condition:
-        fail(message)
 
 
 def split_bin_file_name(file_name: str) -> dict:

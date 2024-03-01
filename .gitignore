@@ -8,3 +8,6 @@
 # Files produced by the pipeline
 /output/
 /solc
+
+# Python's intermediate files
+__pycache__/
