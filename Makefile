@@ -14,24 +14,24 @@ call_names     := \
         ) \
     )
 
-all_sequence_info_json := \
+all_sequence_info_jsons := \
     $(foreach sequence, $(sequence_names), \
         $(foreach contract, $(contract_names), \
             output/optimization/$(sequence)/$(contract)-sequence-info.json \
         ) \
     )
 
-all_sequence_contract_json := \
+all_optimization_info_jsons := \
     $(foreach sequence, $(sequence_names), \
         $(foreach contract, $(contract_names), \
-            output/optimization/$(sequence)/$(contract).json \
+            output/optimization/$(sequence)/$(contract)-optimization-info.json \
         ) \
     )
 
-all_sequence_call_json := \
+all_execution_info_jsons := \
     $(foreach sequence, $(sequence_names), \
         $(foreach call, $(call_names), \
-            output/execution/$(sequence)/$(call).json \
+            output/execution/$(sequence)/$(call)-execution-info.json \
         ) \
     )
 
@@ -64,8 +64,8 @@ all_sequence_contract_targets := \
     $(all_sequence_contract_targets)
 
 all: \
-    output/optimization.json \
-    output/execution.json \
+    output/optimization-info.json \
+    output/execution-info.json \
     $(all_sequence_targets) \
     $(all_contract_targets)
 
@@ -100,7 +100,7 @@ output/contracts/%.json: input/contracts/%.json | output/contracts/
 output/contracts/%.yul: output/contracts/%.json
 	jq --raw-output '.contracts | to_entries[0].value | to_entries[0].value.ir' --indent 4 "$<" > "$@" || { >&2 cat "$<"; false; }
 
-$(all_sequence_info_json): \
+$(all_sequence_info_jsons): \
     output/optimization/%-sequence-info.json: \
     output/contracts/$$(word 2, $$(subst /, , $$*)).yul \
     input/sequences/$$(word 1, $$(subst /, , $$*)).txt
@@ -119,8 +119,8 @@ $(all_sequence_info_json): \
 	mkdir -p "$(dir $@)"
 	mv sequence-info.json "$@"
 
-$(all_sequence_contract_json): \
-    output/optimization/%.json: \
+$(all_optimization_info_jsons): \
+    output/optimization/%-optimization-info.json: \
     output/contracts/$$(word 2, $$(subst /, , $$*)).yul \
     input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
     output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-sequence-info.json \
@@ -138,17 +138,17 @@ $(all_sequence_contract_json): \
 	./optimize-all-prefixes.py "$<" "$$flattened_sequence" --output-dir "$$output_dir" --solc-binary "./solc"
 
 	# Merge all the generated .json files to produce the target artifact.
-	jq --slurp . "$(basename $@)/"*.json --indent 4 > "$@"
+	jq --slurp . "$(patsubst %-optimization-info.json,%,$@)/"*.json --indent 4 > "$@"
 
-output/optimization.json: $(all_sequence_contract_json)
+output/optimization-info.json: $(all_optimization_info_jsons)
 	jq --null-input 'reduce inputs as $$s (.; .[input_filename] += $$s)' $^ --indent 4 > "$@"
 
-$(all_sequence_call_json): \
-    output/execution/%.json: \
+$(all_execution_info_jsons): \
+    output/execution/%-execution-info.json: \
         output/contracts/$$(word 2, $$(subst /, , $$*)).yul \
         input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
         input/calls/$$(word 2, $$(subst /, , $$*))/$$(word 3, $$(subst /, , $$*)).txt \
-        output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*)).json \
+        output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-optimization-info.json \
         execute-all-prefixes.py
 
 	sequence_name="$(word 1, $(subst /, , $*))"
@@ -166,22 +166,22 @@ $(all_sequence_call_json): \
 		--private-key 0x60b139825a56a987d58b20f0145e05dc45bed12df72cb92812b5ea988383c987
 
 	# Merge all the generated .json files to produce the target artifact.
-	jq --slurp . "$(basename $@)/"*.json --indent 4 > "$@"
+	jq --slurp ."$(patsubst %-execution-info.json,%,$@)/"*.json --indent 4 > "$@"
 
-output/execution.json: $(all_sequence_call_json)
+output/execution-info.json: $(all_execution_info_jsons)
 	jq --null-input 'reduce inputs as $$s (.; .[input_filename] += $$s)' $^ --indent 4 > "$@"
 
 $(all_sequence_call_reports_json): \
     output/analysis/%/report.json: \
-        output/execution/%.json \
-        output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*)).json \
+        output/execution/%-execution-info.json \
+        output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-optimization-info.json \
         output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-sequence-info.json \
         analyze-output.py
 	sequence_name="$(word 1, $(subst /, , $*))"
 	contract_name="$(word 2, $(subst /, , $*))"
 	call_name="$(word 3, $(subst /, , $*))"
 	./analyze-output.py \
-		"output/optimization/$${sequence_name}/$${contract_name}.json" \
+		"output/optimization/$${sequence_name}/$${contract_name}-optimization-info.json" \
 		"$<" \
 		"output/optimization/$${sequence_name}/$${contract_name}-sequence-info.json" \
 		--output-dir "$(dir $@)"
