@@ -3,7 +3,6 @@
 .SHELLFLAGS += -euo pipefail
 
 .SECONDEXPANSION:
-percent := %
 
 sequence_names := $(basename $(notdir $(wildcard input/sequences/*.txt)))
 contract_names := $(basename $(notdir $(wildcard input/contracts/*.json)))
@@ -65,6 +64,34 @@ endef
 
 define call-segment
 $(word 3, $(subst /, , $(1)))
+endef
+
+define contract-from-contract-sequence-target
+$(patsubst contract-%,%, $(call contract-segment, $(1)))
+endef
+
+define sequence-from-contract-sequence-target
+$(patsubst sequence-%,%, $(call sequence-segment, $(1)))
+endef
+
+define analysis-jsons-matching-contract-name
+$(foreach call, $(filter $(1)/%, $(call_names)), \
+    $(foreach sequence, $(sequence_names), \
+        output/analysis/$(sequence)/$(call)/report.json \
+    ) \
+)
+endef
+
+define call-names-matching-contract
+$(filter $(call contract-from-contract-sequence-target, $(1))/%, $(call_names))
+endef
+
+define reports-matching-sequence-contract-target
+$(foreach sequence, $(sequence_names), \
+    $(foreach call, $(call call-names-matching-contract, $(1)), \
+        output/analysis/$(call sequence-from-contract-sequence-target, $(1))/$(call)/report.md \
+    ) \
+)
 endef
 
 .PHONY: \
@@ -190,6 +217,7 @@ $(all_analysis_jsons): \
         output/optimization/$$(call sequence-segment, $$*)/$$(call contract-segment, $$*)-optimization-info.json \
         output/optimization/$$(call sequence-segment, $$*)/$$(call contract-segment, $$*)-sequence-info.json \
         analyze-output.py
+
 	sequence_name="$(call sequence-segment, $*)"
 	contract_name="$(call contract-segment, $*)"
 	call_name="$(call call-segment, $*)"
@@ -210,6 +238,7 @@ $(all_per_sequence_reports): \
     output/analysis-per-sequence/%/report.md: \
         $$(foreach call, $$(call_names), output/analysis/$$*/$$(call)/report.json) \
         visualize-output.py
+
 	reports_and_names=($(foreach call, $(call_names), output/analysis/$*/$(call)/report.json --report-name $(call)))
 
 	./visualize-output.py \
@@ -220,12 +249,9 @@ $(all_per_sequence_reports): \
 
 $(all_per_contract_reports): \
     output/analysis-per-contract/%/report.md: \
-        $$(foreach call, $$(filter $$*/$$(percent), $$(call_names)), \
-            $$(foreach sequence, $$(sequence_names), \
-                output/analysis/$$(sequence)/$$(call)/report.json \
-            ) \
-        ) \
+        $(call analysis-jsons-matching-contract-name, $*) \
         visualize-output.py
+
 	reports_and_names=(
 		$(foreach call, $(filter $*/%, $(call_names)), \
 			$(foreach sequence, $(sequence_names), \
@@ -243,13 +269,7 @@ $(all_per_contract_reports): \
 $(all_sequence_targets): sequence-%: output/analysis-per-sequence/$$*/report.md
 $(all_contract_targets): contract-%: output/analysis-per-contract/$$*/report.md
 
-$(all_sequence_contract_targets): \
-    %: \
-        $$(foreach sequence, $$(sequence_names), \
-            $$(foreach call, $$(filter $$(patsubst contract-$$(percent),$$(percent), $$(call contract-segment, $$*))/$$(percent), $$(call_names)), \
-                output/analysis/$$(patsubst sequence-$$(percent),$$(percent), $$(call sequence-segment, $$*))/$$(call)/report.md \
-            ) \
-        )
+$(all_sequence_contract_targets): %: $$(call reports-matching-sequence-contract-target, $$*)
 
 clean-output:
 	rm -rf output/
