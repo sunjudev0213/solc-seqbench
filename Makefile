@@ -285,7 +285,7 @@ $(call report-files-matching-contract-name,%): \
 $(all_sequence_targets): sequence-%: $(call report-files-matching-sequence-name,$$*)
 $(all_contract_targets): contract-%: $(call report-files-matching-contract-name,$$*)
 
-$(all_sequence_contract_targets): %: $$(call report-files-matching-sequence-contract-target, $$*)
+$(all_sequence_contract_targets): %: $(call report-files-matching-sequence-contract-target,$*)
 
 clean-output:
 	rm -rf output/
