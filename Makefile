@@ -42,7 +42,7 @@ all_analysis_jsons := \
         ) \
     )
 
-all_per_sequence_reports := $(foreach sequence, $(sequence_names), output/analysis/$(sequence)/report.md)
+all_per_sequence_reports := $(foreach sequence, $(sequence_names), output/analysis-per-sequence/$(sequence)/report.md)
 all_per_contract_reports := $(foreach contract, $(contract_names), output/analysis-per-contract/$(contract)/report.md)
 
 # Convenience targets for selecting specific contracts/sequences
@@ -196,7 +196,7 @@ $(all_analysis_jsons:%/report.json=%/report.md): %/report.md: %/report.json visu
 		$(EXTRA_VISUALIZE_ARGS)
 
 $(all_per_sequence_reports): \
-    output/analysis/%/report.md: \
+    output/analysis-per-sequence/%/report.md: \
         $$(foreach call, $$(call_names), output/analysis/$$*/$$(call)/report.json) \
         visualize-output.py
 	reports_and_names=($(foreach call, $(call_names), output/analysis/$*/$(call)/report.json --report-name $(call)))
@@ -229,7 +229,7 @@ $(all_per_contract_reports): \
 		--document-title "Contract $*, all sequences and calls" \
 		$(EXTRA_VISUALIZE_ARGS)
 
-$(all_sequence_targets): sequence-%: output/analysis/$$*/report.md
+$(all_sequence_targets): sequence-%: output/analysis-per-sequence/$$*/report.md
 $(all_contract_targets): contract-%: output/analysis-per-contract/$$*/report.md
 
 $(all_sequence_contract_targets): \
