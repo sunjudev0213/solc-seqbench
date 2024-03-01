@@ -88,6 +88,7 @@ def execute_all_steps(bin_dir: Path, call_definition_file: Path, output_dir: Pat
             creation_info = deploy_contract(bytecode, private_key)
 
             runtime_gas = 0
+            execution_status = 'success'
             for call in calls:
                 print(f"Executing call: {' '.join(call)}")
                 runtime_info = call_contract(creation_info['contractAddress'], call, private_key)
