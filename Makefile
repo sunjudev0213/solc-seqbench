@@ -35,15 +35,15 @@ all_execution_info_jsons := \
         ) \
     )
 
-all_sequence_call_reports_json := \
+all_analysis_jsons := \
     $(foreach sequence, $(sequence_names), \
         $(foreach call, $(call_names), \
             output/analysis/$(sequence)/$(call)/report.json \
         ) \
     )
 
-all_sequence_reports := $(foreach sequence, $(sequence_names), output/analysis/$(sequence)/report.md)
-all_contract_reports := $(foreach contract, $(contract_names), output/analysis-per-contract/$(contract)/report.md)
+all_per_sequence_reports := $(foreach sequence, $(sequence_names), output/analysis/$(sequence)/report.md)
+all_per_contract_reports := $(foreach contract, $(contract_names), output/analysis-per-contract/$(contract)/report.md)
 
 # Convenience targets for selecting specific contracts/sequences
 all_sequence_targets := $(foreach sequence, $(sequence_names), sequence-$(sequence))
@@ -171,7 +171,7 @@ $(all_execution_info_jsons): \
 output/execution-info.json: $(all_execution_info_jsons)
 	jq --null-input 'reduce inputs as $$s (.; .[input_filename] += $$s)' $^ --indent 4 > "$@"
 
-$(all_sequence_call_reports_json): \
+$(all_analysis_jsons): \
     output/analysis/%/report.json: \
         output/execution/%-execution-info.json \
         output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-optimization-info.json \
@@ -186,14 +186,14 @@ $(all_sequence_call_reports_json): \
 		"output/optimization/$${sequence_name}/$${contract_name}-sequence-info.json" \
 		--output-dir "$(dir $@)"
 
-$(all_sequence_call_reports_json:%/report.json=%/report.md): %/report.md: %/report.json visualize-output.py
+$(all_analysis_jsons:%/report.json=%/report.md): %/report.md: %/report.json visualize-output.py
 	./visualize-output.py \
 		"$<" \
 		--output-dir "$(dir $@)" \
 		--document-title "$*" \
 		$(EXTRA_VISUALIZE_ARGS)
 
-$(all_sequence_reports): \
+$(all_per_sequence_reports): \
     output/analysis/%/report.md: \
         $$(foreach call, $$(call_names), output/analysis/$$*/$$(call)/report.json) \
         visualize-output.py
@@ -205,7 +205,7 @@ $(all_sequence_reports): \
 		--document-title "Sequence $*, all contracts and calls" \
 		$(EXTRA_VISUALIZE_ARGS)
 
-$(all_contract_reports): \
+$(all_per_contract_reports): \
     output/analysis-per-contract/%/report.md: \
         $$(foreach call, $$(filter $$*/$$(percent), $$(call_names)), \
             $$(foreach sequence, $$(sequence_names), \
