@@ -68,7 +68,7 @@ all_sequence_contract_targets := \
 
 all: analysis
 
-assembly: $(foreach c, $(contract_names), output/contracts/$(c).yul)
+assembly: $(foreach c, $(contract_names), output/assembly/$(c).yul)
 optimization: output/optimization-info.json
 execution: output/execution-info.json
 analysis: $(all_sequence_targets) $(all_contract_targets)
@@ -89,22 +89,22 @@ solc: solidity/
 	mv solidity/build/solc/solc .
 	chmod +x solc
 
-output/contracts/:
+output/assembly/:
 	mkdir -p "$(dir $@)"
 
-output/contracts/%.json: input/contracts/%.json | output/contracts/
+output/assembly/%.json: input/contracts/%.json | output/assembly/
 	cd input/contracts/
 	solc --standard-json "$(notdir $<)" --allow-paths ../sources/ --pretty-json --json-indent 4 > "../../$@"
 
 	errors=$$(jq '.errors[] | select(.type == "Error")' --indent 4 "../../$@")
 	[[ $$errors == "" ]] || { >&2 echo "$$errors"; false; }
 
-output/contracts/%.yul: output/contracts/%.json
+output/assembly/%.yul: output/assembly/%.json
 	jq --raw-output '.contracts | to_entries[0].value | to_entries[0].value.ir' --indent 4 "$<" > "$@" || { >&2 cat "$<"; false; }
 
 $(all_sequence_info_jsons): \
     output/optimization/%-sequence-info.json: \
-    output/contracts/$$(word 2, $$(subst /, , $$*)).yul \
+    output/assembly/$$(word 2, $$(subst /, , $$*)).yul \
     input/sequences/$$(word 1, $$(subst /, , $$*)).txt
 
 	sequence_name="$(word 1, $(subst /, , $*))"
@@ -123,7 +123,7 @@ $(all_sequence_info_jsons): \
 
 $(all_optimization_info_jsons): \
     output/optimization/%-optimization-info.json: \
-    output/contracts/$$(word 2, $$(subst /, , $$*)).yul \
+    output/assembly/$$(word 2, $$(subst /, , $$*)).yul \
     input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
     output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-sequence-info.json \
     optimize-all-prefixes.py
@@ -147,7 +147,7 @@ output/optimization-info.json: $(all_optimization_info_jsons)
 
 $(all_execution_info_jsons): \
     output/execution/%-execution-info.json: \
-        output/contracts/$$(word 2, $$(subst /, , $$*)).yul \
+        output/assembly/$$(word 2, $$(subst /, , $$*)).yul \
         input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
         input/calls/$$(word 2, $$(subst /, , $$*))/$$(word 3, $$(subst /, , $$*)).txt \
         output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-optimization-info.json \
