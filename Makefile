@@ -5,52 +5,52 @@
 .SECONDEXPANSION:
 percent := %
 
-sequences := $(basename $(notdir $(wildcard input/sequences/*.txt)))
-contracts := $(basename $(notdir $(wildcard input/contracts/*.json)))
-calls     := \
-    $(foreach contract, $(contracts), \
+sequence_names := $(basename $(notdir $(wildcard input/sequences/*.txt)))
+contract_names := $(basename $(notdir $(wildcard input/contracts/*.json)))
+call_names     := \
+    $(foreach contract, $(contract_names), \
         $(addprefix $(contract)/, \
             $(basename $(notdir $(wildcard input/calls/$(contract)/*.txt))) \
         ) \
     )
 
 all_sequence_info_json := \
-    $(foreach sequence, $(sequences), \
-        $(foreach contract, $(contracts), \
+    $(foreach sequence, $(sequence_names), \
+        $(foreach contract, $(contract_names), \
             output/optimization/$(sequence)/$(contract)-sequence-info.json \
         ) \
     )
 
 all_sequence_contract_json := \
-    $(foreach sequence, $(sequences), \
-        $(foreach contract, $(contracts), \
+    $(foreach sequence, $(sequence_names), \
+        $(foreach contract, $(contract_names), \
             output/optimization/$(sequence)/$(contract).json \
         ) \
     )
 
 all_sequence_call_json := \
-    $(foreach sequence, $(sequences), \
-        $(foreach call, $(calls), \
+    $(foreach sequence, $(sequence_names), \
+        $(foreach call, $(call_names), \
             output/execution/$(sequence)/$(call).json \
         ) \
     )
 
 all_sequence_call_reports_json := \
-    $(foreach sequence, $(sequences), \
-        $(foreach call, $(calls), \
+    $(foreach sequence, $(sequence_names), \
+        $(foreach call, $(call_names), \
             output/analysis/$(sequence)/$(call)/report.json \
         ) \
     )
 
-all_sequence_tables := $(foreach sequence, $(sequences), output/analysis/$(sequence)/table.md)
-all_contract_tables := $(foreach contract, $(contracts), output/analysis-per-contract/$(contract)/table.md)
+all_sequence_tables := $(foreach sequence, $(sequence_names), output/analysis/$(sequence)/table.md)
+all_contract_tables := $(foreach contract, $(contract_names), output/analysis-per-contract/$(contract)/table.md)
 
 # Convenience targets for selecting specific contracts/sequences
-all_sequence_targets := $(foreach sequence, $(sequences), sequence-$(sequence))
-all_contract_targets := $(foreach contract, $(contracts), contract-$(contract))
+all_sequence_targets := $(foreach sequence, $(sequence_names), sequence-$(sequence))
+all_contract_targets := $(foreach contract, $(contract_names), contract-$(contract))
 all_sequence_contract_targets := \
-    $(foreach sequence, $(sequences), \
-        $(foreach contract, $(contracts), \
+    $(foreach sequence, $(sequence_names), \
+        $(foreach contract, $(contract_names), \
             sequence-$(sequence)/contract-$(contract) \
         ) \
     )
@@ -69,7 +69,7 @@ all: \
     $(all_sequence_targets) \
     $(all_contract_targets)
 
-unoptimized-ir: $(foreach c, $(contracts), output/contracts/$(c).yul)
+unoptimized-ir: $(foreach c, $(contract_names), output/contracts/$(c).yul)
 
 solidity/: solc-sequence-info-dump.patch
 	branch="fix-superfluous-iterations-in-optimizer-sequence"
@@ -195,9 +195,9 @@ $(all_sequence_call_reports_json:%/report.json=%/table.md): %/table.md: %/report
 
 $(all_sequence_tables): \
     output/analysis/%/table.md: \
-        $$(foreach call, $$(calls), output/analysis/$$*/$$(call)/report.json) \
+        $$(foreach call, $$(call_names), output/analysis/$$*/$$(call)/report.json) \
         visualize-output.py
-	reports_and_names=($(foreach call, $(calls), output/analysis/$*/$(call)/report.json --report-name $(call)))
+	reports_and_names=($(foreach call, $(call_names), output/analysis/$*/$(call)/report.json --report-name $(call)))
 
 	./visualize-output.py \
 		"$${reports_and_names[@]}" \
@@ -207,15 +207,15 @@ $(all_sequence_tables): \
 
 $(all_contract_tables): \
     output/analysis-per-contract/%/table.md: \
-        $$(foreach call, $$(filter $$*/$$(percent), $$(calls)), \
-            $$(foreach sequence, $$(sequences), \
+        $$(foreach call, $$(filter $$*/$$(percent), $$(call_names)), \
+            $$(foreach sequence, $$(sequence_names), \
                 output/analysis/$$(sequence)/$$(call)/report.json \
             ) \
         ) \
         visualize-output.py
 	reports_and_names=(
-		$(foreach call, $(filter $*/%, $(calls)), \
-			$(foreach sequence, $(sequences), \
+		$(foreach call, $(filter $*/%, $(call_names)), \
+			$(foreach sequence, $(sequence_names), \
 				output/analysis/$(sequence)/$(call)/report.json --report-name $(sequence)/$(patsubst $*/%,%, $(call))\
 			) \
 		)
@@ -232,8 +232,8 @@ $(all_contract_targets): contract-%: output/analysis-per-contract/$$*/table.md
 
 $(all_sequence_contract_targets): \
     %: \
-        $$(foreach sequence, $$(sequences), \
-            $$(foreach call, $$(filter $$(patsubst contract-$$(percent),$$(percent), $$(word 2, $$(subst /, , $$*)))/$$(percent), $$(calls)), \
+        $$(foreach sequence, $$(sequence_names), \
+            $$(foreach call, $$(filter $$(patsubst contract-$$(percent),$$(percent), $$(word 2, $$(subst /, , $$*)))/$$(percent), $$(call_names)), \
                 output/analysis/$$(patsubst sequence-$$(percent),$$(percent), $$(word 1, $$(subst /, , $$*)))/$$(call)/table.md \
             ) \
         )
