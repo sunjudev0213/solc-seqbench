@@ -253,7 +253,7 @@ $(addprefix output/analysis/%/, report.md $(plot_file_names)): output/analysis/%
 		$(EXTRA_VISUALIZE_ARGS)
 
 $(call report-files-matching-sequence-name,%): \
-    $$(foreach call, $$(call_names), output/analysis/$$*/$$(call)/report.json) \
+    $(foreach call, $(call_names), output/analysis/$$*/$(call)/report.json) \
     visualize-output.py
 
 	reports_and_names=($(foreach call, $(call_names), output/analysis/$*/$(call)/report.json --report-name $(call)))
