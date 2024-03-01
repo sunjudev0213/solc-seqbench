@@ -255,7 +255,7 @@ $(all_per_contract_reports): \
 	reports_and_names=(
 		$(foreach call, $(filter $*/%, $(call_names)), \
 			$(foreach sequence, $(sequence_names), \
-				output/analysis/$(sequence)/$(call)/report.json --report-name $(sequence)/$(patsubst $*/%,%, $(call))\
+				output/analysis/$(sequence)/$(call)/report.json --report-name $(sequence)/$(patsubst $*/%,%, $(call)) \
 			) \
 		)
 	)
