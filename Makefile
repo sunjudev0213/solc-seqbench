@@ -61,6 +61,7 @@ all_sequence_contract_targets := \
     unoptimized-yul \
     optimization \
     execution \
+    analysis \
     $(all_sequence_targets) \
     $(all_contract_targets) \
     $(all_sequence_contract_targets)
