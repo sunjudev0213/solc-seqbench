@@ -57,7 +57,7 @@ def execute_command_timed(command, standard_input) -> (str, int):
     return (output.decode('utf-8'), user_mode_cpu_time_in_seconds)
 
 
-def assemble(yul_file: Path, optimizer_steps: str, solc_binary: Path) -> (str, str, dict):
+def optimize_yul(yul_file: Path, optimizer_steps: str, solc_binary: Path) -> (str, str, dict):
     json_input: dict = {
         'language': 'Yul',
         'sources': {
@@ -98,13 +98,13 @@ def validate_sequence(optimizer_steps: str):
     require(depth == 0, f"Found unmatched ']' in the sequence")
 
 
-def iterative_assembler(yul_file: Path, optimizer_steps: str, solc_binary: Path):
+def iterative_yul_optimizer(yul_file: Path, optimizer_steps: str, solc_binary: Path):
     MAX_ITERATIONS = 12
     position = 0
     prefix = ''
     stack = []
 
-    (bytecode, ir, compilation_info) = assemble(yul_file, prefix + ':', solc_binary)
+    (bytecode, ir, compilation_info) = optimize_yul(yul_file, prefix + ':', solc_binary)
     require(compilation_info['status'] == 'success', "Unoptimized compilation failed.")
     yield (prefix, bytecode, ir, compilation_info)
 
@@ -138,15 +138,15 @@ def iterative_assembler(yul_file: Path, optimizer_steps: str, solc_binary: Path)
             prefix += step
             position += 1
 
-            (bytecode, ir, compilation_info) = assemble(yul_file, prefix + ':' if ':' not in prefix else prefix, solc_binary)
+            (bytecode, ir, compilation_info) = optimize_yul(yul_file, prefix + ':' if ':' not in prefix else prefix, solc_binary)
             yield (prefix, bytecode, ir, compilation_info)
 
     assert len(stack) == 0
 
 
-def assemble_with_intermediate_snapshots(yul_file: Path, optimizer_steps: str, output_dir: Path, solc_binary: Path):
+def optimize_yul_with_intermediate_snapshots(yul_file: Path, optimizer_steps: str, output_dir: Path, solc_binary: Path):
     output_dir.mkdir(parents=True, exist_ok=True)
-    for i, (prefix, bytecode, ir_optimized, compilation_info) in enumerate(iterative_assembler(Path(yul_file), optimizer_steps, solc_binary)):
+    for i, (prefix, bytecode, ir_optimized, compilation_info) in enumerate(iterative_yul_optimizer(Path(yul_file), optimizer_steps, solc_binary)):
         file_basename = f'{yul_file.stem}-step-{i:05d}'
         if len(prefix) > 0:
             file_basename += f'-{prefix[-1]}'
@@ -175,7 +175,7 @@ def assemble_with_intermediate_snapshots(yul_file: Path, optimizer_steps: str, o
 def main(yul_file: str, optimizer_steps: str, output_dir: str, solc_binary: str):
     require(Path(yul_file).suffix == '.yul', "Input file must have the .yul extension.")
     validate_sequence(optimizer_steps)
-    assemble_with_intermediate_snapshots(Path(yul_file), optimizer_steps, Path(output_dir), Path(solc_binary))
+    optimize_yul_with_intermediate_snapshots(Path(yul_file), optimizer_steps, Path(output_dir), Path(solc_binary))
 
 
 if __name__ == '__main__':
