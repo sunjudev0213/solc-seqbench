@@ -55,6 +55,18 @@ all_sequence_contract_targets := \
         ) \
     )
 
+define sequence-segment
+$(word 1, $(subst /, , $(1)))
+endef
+
+define contract-segment
+$(word 2, $(subst /, , $(1)))
+endef
+
+define call-segment
+$(word 3, $(subst /, , $(1)))
+endef
+
 .PHONY: \
     all \
     clean \
@@ -104,11 +116,11 @@ output/assembly/%.yul: output/assembly/%.json
 
 $(all_sequence_info_jsons): \
     output/optimization/%-sequence-info.json: \
-    output/assembly/$$(word 2, $$(subst /, , $$*)).yul \
-    input/sequences/$$(word 1, $$(subst /, , $$*)).txt
+    output/assembly/$$(call contract-segment, $$*).yul \
+    input/sequences/$$(call sequence-segment, $$*).txt
 
-	sequence_name="$(word 1, $(subst /, , $*))"
-	contract_name="$(word 2, $(subst /, , $*))"
+	sequence_name="$(call sequence-segment, $*)"
+	contract_name="$(call contract-segment, $*)"
 
 	# Load sequence but strip comments from line ends and remove empty lines
 	sequence=$$(sed -e 's|^\([^#]*\).*$$|\1|g' -e '/^\s*$$/d' "input/sequences/$${sequence_name}.txt")
@@ -123,13 +135,13 @@ $(all_sequence_info_jsons): \
 
 $(all_optimization_info_jsons): \
     output/optimization/%-optimization-info.json: \
-    output/assembly/$$(word 2, $$(subst /, , $$*)).yul \
-    input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
-    output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-sequence-info.json \
+    output/assembly/$$(call contract-segment, $$*).yul \
+    input/sequences/$$(call sequence-segment, $$*).txt \
+    output/optimization/$$(call sequence-segment, $$*)/$$(call contract-segment, $$*)-sequence-info.json \
     optimize-all-prefixes.py
 
-	sequence_name="$(word 1, $(subst /, , $*))"
-	contract_name="$(word 2, $(subst /, , $*))"
+	sequence_name="$(call sequence-segment, $*)"
+	contract_name="$(call contract-segment, $*)"
 	sequence_info_file="output/optimization/$${sequence_name}/$${contract_name}-sequence-info.json"
 	flattened_sequence=$$(jq '.[0].flattened_sequence_no_hardcoded' "$$sequence_info_file" --raw-output)
 
@@ -147,14 +159,14 @@ output/optimization-info.json: $(all_optimization_info_jsons)
 
 $(all_execution_info_jsons): \
     output/execution/%-execution-info.json: \
-        input/sequences/$$(word 1, $$(subst /, , $$*)).txt \
-        input/calls/$$(word 2, $$(subst /, , $$*))/$$(word 3, $$(subst /, , $$*)).txt \
-        output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-optimization-info.json \
+        input/sequences/$$(call sequence-segment, $$*).txt \
+        input/calls/$$(call contract-segment, $$*)/$$(call call-segment, $$*).txt \
+        output/optimization/$$(call sequence-segment, $$*)/$$(call contract-segment, $$*)-optimization-info.json \
         execute-all-prefixes.py
 
-	sequence_name="$(word 1, $(subst /, , $*))"
-	contract_name="$(word 2, $(subst /, , $*))"
-	call_name="$(word 3, $(subst /, , $*))"
+	sequence_name="$(call sequence-segment, $*)"
+	contract_name="$(call contract-segment, $*)"
+	call_name="$(call call-segment, $*)"
 	execution_subdir="$${sequence_name}/$${contract_name}/$${call_name}"
 	mkdir -p "output/execution/$${execution_subdir}/"
 
@@ -175,12 +187,12 @@ output/execution-info.json: $(all_execution_info_jsons)
 $(all_analysis_jsons): \
     output/analysis/%/report.json: \
         output/execution/%-execution-info.json \
-        output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-optimization-info.json \
-        output/optimization/$$(word 1, $$(subst /, , $$*))/$$(word 2, $$(subst /, , $$*))-sequence-info.json \
+        output/optimization/$$(call sequence-segment, $$*)/$$(call contract-segment, $$*)-optimization-info.json \
+        output/optimization/$$(call sequence-segment, $$*)/$$(call contract-segment, $$*)-sequence-info.json \
         analyze-output.py
-	sequence_name="$(word 1, $(subst /, , $*))"
-	contract_name="$(word 2, $(subst /, , $*))"
-	call_name="$(word 3, $(subst /, , $*))"
+	sequence_name="$(call sequence-segment, $*)"
+	contract_name="$(call contract-segment, $*)"
+	call_name="$(call call-segment, $*)"
 	./analyze-output.py \
 		"output/optimization/$${sequence_name}/$${contract_name}-optimization-info.json" \
 		"$<" \
@@ -234,8 +246,8 @@ $(all_contract_targets): contract-%: output/analysis-per-contract/$$*/report.md
 $(all_sequence_contract_targets): \
     %: \
         $$(foreach sequence, $$(sequence_names), \
-            $$(foreach call, $$(filter $$(patsubst contract-$$(percent),$$(percent), $$(word 2, $$(subst /, , $$*)))/$$(percent), $$(call_names)), \
-                output/analysis/$$(patsubst sequence-$$(percent),$$(percent), $$(word 1, $$(subst /, , $$*)))/$$(call)/report.md \
+            $$(foreach call, $$(filter $$(patsubst contract-$$(percent),$$(percent), $$(call contract-segment, $$*))/$$(percent), $$(call_names)), \
+                output/analysis/$$(patsubst sequence-$$(percent),$$(percent), $$(call sequence-segment, $$*))/$$(call)/report.md \
             ) \
         )
 
