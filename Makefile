@@ -71,7 +71,7 @@ all: analysis
 assembly: $(foreach c, $(contract_names), output/assembly/$(c).yul)
 optimization: output/optimization-info.json
 execution: output/execution-info.json
-analysis: $(all_sequence_targets) $(all_contract_targets)
+analysis: $(all_sequence_targets) $(all_contract_targets) $(all_sequence_contract_targets)
 
 solidity/: solc-sequence-info-dump.patch
 	branch="fix-superfluous-iterations-in-optimizer-sequence"
