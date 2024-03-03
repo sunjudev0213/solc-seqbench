@@ -135,7 +135,7 @@ def main(
         plt.legend(report_name)
         plot_file_name = f'{name_prefix}{plot_name}.svg'
         plt.savefig(Path(output_dir) / plot_file_name)
-        document += f"![{title}]({plot_file_name})\n"
+        document += f"#### {title}\n\n![{title}]({plot_file_name})\n"
 
     def add_plot_vs_time(plot_name, y_column, ylabel, title):
         nonlocal document
@@ -154,7 +154,7 @@ def main(
         plt.legend(report_name)
         plot_file_name = f'{name_prefix}{plot_name}.svg'
         plt.savefig(Path(output_dir) / plot_file_name)
-        document += f"![{title}]({plot_file_name})\n"
+        document += f"#### {title}\n\n![{title}]({plot_file_name})\n"
 
     add_plot_vs_index('runtime-gas', 'runtime_gas', 'gas', 'Test execution cost after each step')
     if 'optimization_time' in tables[0].columns:
@@ -175,19 +175,19 @@ def main(
 
     add_plot_vs_index('compilation-time', 'compilation_time', 'time (seconds)', 'Compilation time with a prefix ending at this step')
 
-    document += '\n\n'
+    document += f"\n\n### Tables\n\n"
 
     if len(tables) == 1:
         formatted_table = format_table(tables[0][['step', 'step_name'] + selected_columns])
         if show_table:
             print(formatted_table)
         if report_name[0] != '':
-            document += f"### {report_name}\n\n"
+            document += f"#### {report_name}\n\n"
         document += formatted_table + '\n\n'
     else:
         for column in selected_columns:
             if column in tables[0].columns:
-                document += f"### {column}\n\n"
+                document += f"#### {column}\n\n"
                 formatted_table = format_table(build_comparison_table(column, tables, report_name, shared_step_column=tables_have_compatible_steps))
                 if show_table:
                     print(f"\n{column}\n")
