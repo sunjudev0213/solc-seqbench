@@ -113,13 +113,6 @@ def build_summary_table(selected_columns: list[str], tables: list[DataFrame], re
     ])
 
 
-def highlight_changed_cells(table_before, table_after):
-    return table_after.where(
-        table_after == table_before,
-        table_after.applymap(lambda x: f'**{x}**'),
-    )
-
-
 def simplify_report_names(report_names: list[str]):
     assert len(report_names) == len(set(report_names))
 
@@ -211,19 +204,23 @@ def main(
 
     before_summary_table = build_summary_table(summary_columns, tables, simple_report_names, 'before')
     after_summary_table  = build_summary_table(summary_columns, tables, simple_report_names, 'after')
+    min_summary_table    = build_summary_table(summary_columns, tables, simple_report_names, 'min')
     add_summary_table("Final values", after_summary_table)
-
-    min_summary_table = highlight_changed_cells(
-        after_summary_table[minimized_columns],
-        build_summary_table(summary_columns, tables, simple_report_names, 'min')[minimized_columns]
-    )
-    add_summary_table("Lowest intermediate values", min_summary_table)
 
     diff_table = (
         (after_summary_table[minimized_columns] - before_summary_table[minimized_columns]) /
         before_summary_table[minimized_columns]
     ).fillna(numpy.nan).replace([numpy.nan], [None]).applymap(format_percent)
-    add_summary_table("Final values vs unoptimized", diff_table)
+    min_diff_table = (
+        (min_summary_table[minimized_columns] - before_summary_table[minimized_columns]) /
+        before_summary_table[minimized_columns]
+    ).fillna(numpy.nan).replace([numpy.nan], [None]).applymap(format_percent)
+
+    combined_diff_table = diff_table.where(
+        diff_table == min_diff_table,
+        diff_table + ' (_min: ' + min_diff_table + '_)',
+    )
+    add_summary_table("Final values vs unoptimized", combined_diff_table)
 
     document += f"\n\n### Plots\n\n"
 
