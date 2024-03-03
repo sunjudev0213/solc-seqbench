@@ -117,6 +117,16 @@ def highlight_changed_cells(table_before, table_after):
     )
 
 
+def simplify_report_names(report_names: list[str]):
+    assert len(report_names) == len(set(report_names))
+
+    def prefix(name):
+        return name.split('/', 1)[0]
+
+    report_name_prefixes = [prefix(name) for name in report_names]
+    return [prefix(name) if report_name_prefixes.count(prefix(name)) <= 1 else name for name in report_names]
+
+
 @click.command()
 @click.argument('report_paths', nargs=-1)
 @click.option('--report-name', multiple=True, default=[''])
@@ -148,6 +158,9 @@ def main(
 
     require(len(report_name) == len(set(report_name)), "Report names are not unique.")
     require(len(report_name) == len(report_paths), "The number of reports does not match the number of report names given.")
+    require(all(name.count('/') <= 1 for name in report_name), "Report name can contain at most one slash.")
+
+    simple_report_names = simplify_report_names(report_name)
 
     tables_have_compatible_steps = True
     for i, other_table in enumerate(tables[1:]):
@@ -193,13 +206,13 @@ def main(
     ]
     assert set(minimized_columns).issubset(set(selected_columns))
 
-    before_summary_table = build_summary_table(summary_columns, tables, report_name, 'before')
-    after_summary_table  = build_summary_table(summary_columns, tables, report_name, 'after')
+    before_summary_table = build_summary_table(summary_columns, tables, simple_report_names, 'before')
+    after_summary_table  = build_summary_table(summary_columns, tables, simple_report_names, 'after')
     add_summary_table("Final values", after_summary_table)
 
     min_summary_table = highlight_changed_cells(
         after_summary_table[minimized_columns],
-        build_summary_table(summary_columns, tables, report_name, 'min')[minimized_columns]
+        build_summary_table(summary_columns, tables, simple_report_names, 'min')[minimized_columns]
     )
     add_summary_table("Lowest intermediate values", min_summary_table)
 
@@ -216,7 +229,7 @@ def main(
         plt.figure(title)
         for table in tables:
             plot_column_with_step_labels(table, column, ylabel, title, style, origin_at_zero=(len(tables) == 1))
-        plt.legend(report_name)
+        plt.legend(simple_report_names)
         plot_file_name = f'{name_prefix}{plot_name}.svg'
         plt.savefig(Path(output_dir) / plot_file_name)
         document += f"#### {title}\n\n![{title}]({plot_file_name})\n"
@@ -235,7 +248,7 @@ def main(
                 start_index=1,
                 origin_at_zero=(len(tables) == 1),
             )
-        plt.legend(report_name)
+        plt.legend(simple_report_names)
         plot_file_name = f'{name_prefix}{plot_name}.svg'
         plt.savefig(Path(output_dir) / plot_file_name)
         document += f"#### {title}\n\n![{title}]({plot_file_name})\n"
@@ -265,14 +278,14 @@ def main(
         formatted_table = format_table(tables[0][['step', 'step_name'] + selected_columns])
         if show_table:
             print(formatted_table)
-        if report_name[0] != '':
-            document += f"#### {report_name[0]}\n\n"
+        if simple_report_names[0] != '':
+            document += f"#### {simple_report_names[0]}\n\n"
         document += formatted_table + '\n\n'
     else:
         for column in selected_columns:
             if column in tables[0].columns:
                 document += f"#### {column}\n\n"
-                formatted_table = format_table(build_comparison_table(column, tables, report_name, shared_step_column=tables_have_compatible_steps))
+                formatted_table = format_table(build_comparison_table(column, tables, simple_report_names, shared_step_column=tables_have_compatible_steps))
                 if show_table:
                     print(f"\n{column}\n")
                     print(formatted_table)
