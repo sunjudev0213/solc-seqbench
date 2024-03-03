@@ -88,11 +88,15 @@ def main(
 
     if sequence_info_path is not None:
         sequence_table = DataFrame(sequence_info)
+        # Sequence info is aware of hard-coded steps while optimization and execution info are not. Drop them.
         sequence_table = sequence_table[sequence_table.hardcoded == False]
+        # The index may have become non-contiguous so reindex
         sequence_table.set_index(['index'], inplace=True)
         sequence_table.reset_index(inplace=True)
+        # Sequence info is also missing step 0, which represents the empty sequence.
         sequence_table.index += 1
-        # NOTE: Execution info may be missing info for some steps if compilation or execution failed
+        # Make sure indexes are compatible now. Note that they may still not be identical. Steps that failed compilation with
+        # StackTooDeep or reverted during execution will be missing from optimization and/or execution info.
         require((execution_table.index[1:].isin(sequence_table.index)).all(), "Step indexes in sequence info do not match execution info.")
 
     step_table = DataFrame({
