@@ -46,6 +46,14 @@ def plot_xy_with_step_labels(table: DataFrame, x_column: str, y_column: str, xla
 def format_table(table: DataFrame, int_format_bug_workaround: bool = False) -> str:
     # astype('object') allows us to put the empty string even in columns that enforce a non-string dtype
     prepared_table = table.astype('object').fillna('')
+
+    if int_format_bug_workaround:
+        # FIXME: When the table contains no columns with dtype 'object', tabulate seems to treat 'int' columns as 'float'.
+        # This happens even when there are only 'int' columns in the table.
+        # Probably also related to https://github.com/astanin/python-tabulate/issues/18.
+        # As a workaround, convert the table to dict before printing. Note that this loses the name of the index column.
+        prepared_table = prepared_table.to_dict('records')
+
     return tabulate(prepared_table, headers='keys', tablefmt='github', showindex=True, intfmt=' ')
 
 
@@ -94,6 +102,13 @@ def main(
         print("No input files specified.")
         return
 
+    for table in tables:
+        # NOTE: If there is even one float column, python-tabulate converts all int columns to float as well.
+        # The fix is available but not in the latest release yet, see: https://github.com/astanin/python-tabulate/issues/18.
+        # Just convert time columns to microseconds, both to avoid this and for consistency.
+        table['compilation_time'] = (table['compilation_time'] * 10**6).round().astype({'compilation_time': int})
+        table.rename(columns={'duration_microsec': 'duration'}, inplace=True)
+
     require(len(report_name) == len(set(report_name)), "Report names are not unique.")
     require(len(report_name) == len(report_paths), "The number of reports does not match the number of report names given.")
 
@@ -114,7 +129,7 @@ def main(
         'runtime_gas',
         'bytecode_size',
         'creation_gas',
-        'duration_microsec',
+        'duration',
         'optimization_time',
         'compilation_time',
     ]
@@ -164,12 +179,12 @@ def main(
     if 'optimization_time' in tables[0].columns:
         add_plot_vs_time('creation-gas-vs-optimization-time', 'creation_gas', 'gas', 'Contract deployment cost vs optimization time')
 
-    if 'optimization_time' in tables[0].columns and 'duration_microsec' in tables[0].columns:
+    if 'optimization_time' in tables[0].columns and 'duration' in tables[0].columns:
         duration_plot_style = 'bar' if len(tables) == 1 else 'line'
-        add_plot_vs_index('step-duration', 'duration_microsec', 'time (microseconds)', 'Duration of each step', style=duration_plot_style)
+        add_plot_vs_index('step-duration', 'duration', 'time (microseconds)', 'Duration of each step', style=duration_plot_style)
         add_plot_vs_index('optimization-time', 'optimization_time', 'time (microseconds)', 'Cumulative optimization time after each step')
 
-    add_plot_vs_index('compilation-time', 'compilation_time', 'time (seconds)', 'Compilation time with a prefix ending at this step')
+    add_plot_vs_index('compilation-time', 'compilation_time', 'time (microseconds)', 'Compilation time with a prefix ending at this step')
 
     document += f"\n\n### Tables\n\n"
 
