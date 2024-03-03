@@ -54,7 +54,7 @@ def format_table(table: DataFrame, int_format_bug_workaround: bool = False) -> s
         # As a workaround, convert the table to dict before printing. Note that this loses the name of the index column.
         prepared_table = prepared_table.to_dict('records')
 
-    return tabulate(prepared_table, headers='keys', tablefmt='github', showindex=True, intfmt=' ')
+    return tabulate(prepared_table, headers='keys', tablefmt='pipe', showindex=True, intfmt=' ')
 
 
 def build_comparison_table(column_name: str, tables: list[DataFrame], table_names: list[str], shared_step_column: bool) -> DataFrame:
