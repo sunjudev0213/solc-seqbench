@@ -85,10 +85,19 @@ def validate_sequence(optimizer_steps: str):
 
         require(depth >= 0, f"Found unmatched ']' at position {i}.")
 
+    # We want only sequences with explicitly specified cleanup part to avoid ambiguities.
     require(
-        ':' not in optimizer_steps or ('[' not in optimizer_steps and ']' not in optimizer_steps),
-        f"Cleanup sequence is supported only without nesting."
+        ':' in optimizer_steps,
+        f"Cleanup sequence marker ':' not present in the sequence."
     )
+
+    if '[' in optimizer_steps:
+        require(
+            optimizer_steps.strip() == '' or optimizer_steps.strip()[-1] == ':',
+            f"Cleanup sequence is supported only without nesting."
+        )
+    else:
+        assert ']' not in optimizer_steps
 
     require(depth == 0, f"Found unmatched ']' in the sequence")
 
