@@ -46,6 +46,9 @@ def plot_xy_with_step_labels(table: DataFrame, x_column: str, y_column: str, xla
 
 
 def format_table(table: DataFrame, int_format_bug_workaround: bool = False) -> str:
+    # Allow column names with dashes to wrap to keep columns narrower
+    table = table.rename(columns={name: name.replace('_', ' ') for name in table.columns})
+
     # astype('object') allows us to put the empty string even in columns that enforce a non-string dtype
     prepared_table = table.astype('object').fillna('')
     show_index = True
