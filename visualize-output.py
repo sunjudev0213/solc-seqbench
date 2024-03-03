@@ -143,6 +143,8 @@ def main(
 
     document = f"## {document_title}\n\n" if document_title is not None else ''
 
+    document += f"\n\n### Plots\n\n"
+
     def add_plot_vs_index(plot_name, column, ylabel, title, style='line'):
         nonlocal document
         plt.figure(title)
