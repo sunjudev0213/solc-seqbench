@@ -288,6 +288,7 @@ $(all_contract_targets): contract-%: $(call report-files-matching-contract-name,
 $(all_sequence_contract_targets): %: $(call report-files-matching-sequence-contract-target,$*)
 
 clean-output:
+	rm -rf __pycache__/
 	rm -rf output/
 	rm -f sequence-info.json
 
