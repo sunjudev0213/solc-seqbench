@@ -205,6 +205,7 @@ def main(
     before_summary_table = build_summary_table(summary_columns, tables, simple_report_names, 'before')
     after_summary_table  = build_summary_table(summary_columns, tables, simple_report_names, 'after')
     min_summary_table    = build_summary_table(summary_columns, tables, simple_report_names, 'min')
+    add_summary_table("Unoptimized values", before_summary_table)
     add_summary_table("Final values", after_summary_table)
 
     diff_table = (
