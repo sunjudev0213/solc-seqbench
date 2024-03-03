@@ -46,7 +46,7 @@ def plot_xy_with_step_labels(table: DataFrame, x_column: str, y_column: str, xla
 def format_table(table: DataFrame, int_format_bug_workaround: bool = False) -> str:
     # astype('object') allows us to put the empty string even in columns that enforce a non-string dtype
     prepared_table = table.astype('object').fillna('')
-    return tabulate(prepared_table, headers='keys', tablefmt='github', showindex=True)
+    return tabulate(prepared_table, headers='keys', tablefmt='github', showindex=True, intfmt=' ')
 
 
 def build_comparison_table(column_name: str, tables: list[DataFrame], table_names: list[str], shared_step_column: bool) -> DataFrame:
