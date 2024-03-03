@@ -15,6 +15,7 @@ from seqbench_helpers import require
 BIN_FILE_NAME_REGEX = re.compile(r'(.*)-step-(\d{5})(?:-([a-zA-Z]))?.bin')
 
 STEP_NAMES = {
+    None: '',
     'a': 'SSATransform',
     'C': 'ConditionalSimplifier',
     'c': 'CommonSubexpressionEliminator',
