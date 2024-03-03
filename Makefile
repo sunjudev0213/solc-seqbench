@@ -115,6 +115,7 @@ endef
 .PHONY: \
     all \
     clean \
+    touch \
     assembly \
     optimization \
     execution \
@@ -300,3 +301,9 @@ clean: clean-output clean-build
 distclean: clean
 	rm solc
 	rm -rf input/sources/
+
+# Updates the timestamp of all the heavy intermediate files so that make won't rebuild them.
+# USE WITH CAUTION! This is meant to be used only when you know they're up to date and would not change.
+touch:
+	timestamp=$$(date '+%Y%m%d%H%M.%S')
+	find output/optimization/ output/execution/ solc -exec touch {} -t "$$timestamp" \; -print
