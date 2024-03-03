@@ -5,12 +5,14 @@ from pathlib import Path
 
 import click
 import matplotlib.pyplot as plt
+import numpy
 from pandas import DataFrame
 import pandas
 from tabulate import tabulate
 
 import seqbench_helpers
 from seqbench_helpers import fail
+from seqbench_helpers import format_percent
 from seqbench_helpers import require
 
 
@@ -85,6 +87,36 @@ def build_comparison_table(column_name: str, tables: list[DataFrame], table_name
     return comparison_table
 
 
+def build_summary_table(selected_columns: list[str], tables: list[DataFrame], report_names: list[str], value_set: str) -> DataFrame:
+    assert len(tables) == len(report_names)
+    assert all(len(table) > 0 for table in tables)
+    assert all('' not in table for table in tables)
+    assert value_set in ['before', 'after', 'min']
+
+    def summary_row(table, report_name, value_set):
+        if value_set == 'before':
+            row = table.iloc[[0]].reset_index(drop=True)
+        elif value_set == 'after':
+            row = table.iloc[[-1]].reset_index(drop=True)
+        elif value_set == 'min':
+            row = table.min(numeric_only=True).to_frame().T
+
+        row[''] = report_name
+        return row.set_index('')
+
+    return pandas.concat([
+        summary_row(table[selected_columns], report_name, value_set)
+        for table, report_name in zip(tables, report_names)
+    ])
+
+
+def highlight_changed_cells(table_before, table_after):
+    return table_after.where(
+        table_after == table_before,
+        table_after.applymap(lambda x: f'**{x}**'),
+    )
+
+
 @click.command()
 @click.argument('report_paths', nargs=-1)
 @click.option('--report-name', multiple=True, default=[''])
@@ -142,6 +174,40 @@ def main(
     assert 'step_name' not in selected_columns
 
     document = f"## {document_title}\n\n" if document_title is not None else ''
+
+    summary_columns = [c for c in selected_columns if c != 'duration']
+
+    document += f"\n\n### Summary\n\n"
+
+    def add_summary_table(title, summary_table):
+        nonlocal document
+        formatted_table = format_table(summary_table, int_format_bug_workaround=True)
+        if show_table:
+            print(formatted_table)
+        document += f"#### {title}\n\n{formatted_table}\n\n"
+
+    minimized_columns = [
+        'runtime_gas',
+        'bytecode_size',
+        'creation_gas',
+    ]
+    assert set(minimized_columns).issubset(set(selected_columns))
+
+    before_summary_table = build_summary_table(summary_columns, tables, report_name, 'before')
+    after_summary_table  = build_summary_table(summary_columns, tables, report_name, 'after')
+    add_summary_table("Final values", after_summary_table)
+
+    min_summary_table = highlight_changed_cells(
+        after_summary_table[minimized_columns],
+        build_summary_table(summary_columns, tables, report_name, 'min')[minimized_columns]
+    )
+    add_summary_table("Lowest intermediate values", min_summary_table)
+
+    diff_table = (
+        (after_summary_table[minimized_columns] - before_summary_table[minimized_columns]) /
+        before_summary_table[minimized_columns]
+    ).fillna(numpy.nan).replace([numpy.nan], [None]).applymap(format_percent)
+    add_summary_table("Final values vs unoptimized", diff_table)
 
     document += f"\n\n### Plots\n\n"
 
