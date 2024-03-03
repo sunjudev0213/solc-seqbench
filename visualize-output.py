@@ -266,7 +266,7 @@ def main(
         if show_table:
             print(formatted_table)
         if report_name[0] != '':
-            document += f"#### {report_name}\n\n"
+            document += f"#### {report_name[0]}\n\n"
         document += formatted_table + '\n\n'
     else:
         for column in selected_columns:
