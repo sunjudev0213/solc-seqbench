@@ -46,15 +46,20 @@ def plot_xy_with_step_labels(table: DataFrame, x_column: str, y_column: str, xla
 def format_table(table: DataFrame, int_format_bug_workaround: bool = False) -> str:
     # astype('object') allows us to put the empty string even in columns that enforce a non-string dtype
     prepared_table = table.astype('object').fillna('')
+    show_index = True
 
     if int_format_bug_workaround:
         # FIXME: When the table contains no columns with dtype 'object', tabulate seems to treat 'int' columns as 'float'.
         # This happens even when there are only 'int' columns in the table.
         # Probably also related to https://github.com/astanin/python-tabulate/issues/18.
-        # As a workaround, convert the table to dict before printing. Note that this loses the name of the index column.
-        prepared_table = prepared_table.to_dict('records')
+        # As a workaround, manually flatten the table before printing.
+        prepared_table = [
+            {prepared_table.index.name: index} | row
+            for index, row in zip(prepared_table.index, prepared_table.to_dict('records'))
+        ]
+        show_index = False
 
-    return tabulate(prepared_table, headers='keys', tablefmt='pipe', showindex=True, intfmt=' ')
+    return tabulate(prepared_table, headers='keys', tablefmt='pipe', showindex=show_index, intfmt=' ')
 
 
 def build_comparison_table(column_name: str, tables: list[DataFrame], table_names: list[str], shared_step_column: bool) -> DataFrame:
