@@ -265,7 +265,7 @@ $(call report-files-matching-sequence-name,%): \
 		$(EXTRA_VISUALIZE_ARGS)
 
 $(call report-files-matching-contract-name,%): \
-    $(call analysis-jsons-matching-contract-name, $*) \
+    $$(call analysis-jsons-matching-contract-name, $$*) \
     visualize-output.py
 
 	reports_and_names=(
