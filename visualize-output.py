@@ -114,6 +114,17 @@ def main(
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
+    selected_columns = [
+        'runtime_gas',
+        'bytecode_size',
+        'creation_gas',
+        'duration_microsec',
+        'optimization_time',
+        'compilation_time',
+    ]
+    assert 'step' not in selected_columns
+    assert 'step_name' not in selected_columns
+
     document = f"## {document_title}\n\n" if document_title is not None else ''
 
     def add_plot_vs_index(plot_name, column, ylabel, title, style='line'):
@@ -167,14 +178,14 @@ def main(
     document += '\n\n'
 
     if len(tables) == 1:
-        formatted_table = format_table(tables[0])
+        formatted_table = format_table(tables[0][['step', 'step_name'] + selected_columns])
         if show_table:
             print(formatted_table)
         if report_name[0] != '':
             document += f"### {report_name}\n\n"
         document += formatted_table + '\n\n'
     else:
-        for column in ['runtime_gas', 'bytecode_size', 'creation_gas', 'duration_microsec', 'optimization_time', 'compilation_time']:
+        for column in selected_columns:
             if column in tables[0].columns:
                 document += f"### {column}\n\n"
                 formatted_table = format_table(build_comparison_table(column, tables, report_name, shared_step_column=tables_have_compatible_steps))
