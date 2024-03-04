@@ -1,0 +1,12 @@
+# Sequence constructed of only those parts of the default sequence that seem to improve metrics on test input.
+dhfoDgvulfnTUtnIf            # None of these can make stack problems worse
+xa[r]EscLM                   # Turn into SSA and simplify
+Vcul [j]                     # Reverse SSA
+Tpeul                        # Run functional expression inliner
+xa[r]cL                      # Turn into SSA again and simplify
+gvif                         # Run full inliner
+CTUca[r]LSsTFOtfDnca[r]Iulc  # SSA plus simplify
+[CTU]
+
+jmul
+:
