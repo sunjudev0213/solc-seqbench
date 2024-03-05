@@ -10,15 +10,15 @@ def require(condition: bool, message: str | None = None):
         fail(message)
 
 
-def format_percent(decimal_value):
+def format_percent(decimal_value: int | float, fractional_digits: int = 0):
     if decimal_value is None:
         return ''
 
     percentage = decimal_value * 100
     prefix = (
         # Distinguish actual zero from very small differences
-        '+' if round(percentage) == 0 and percentage > 0 else
-        '-' if round(percentage) == 0 and percentage < 0 else
+        '+' if round(percentage, fractional_digits) == 0 and percentage > 0 else
+        '-' if round(percentage, fractional_digits) == 0 and percentage < 0 else
         ''
     )
-    return f'{prefix}{round(percentage)}%'
+    return f'{prefix}{round(percentage, fractional_digits)}%'

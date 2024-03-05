@@ -211,11 +211,11 @@ def main(
     diff_table = (
         (after_summary_table[minimized_columns] - before_summary_table[minimized_columns]) /
         before_summary_table[minimized_columns]
-    ).fillna(numpy.nan).replace([numpy.nan], [None]).applymap(format_percent)
+    ).fillna(numpy.nan).replace([numpy.nan], [None]).applymap(lambda x: format_percent(x, fractional_digits=1))
     min_diff_table = (
         (min_summary_table[minimized_columns] - before_summary_table[minimized_columns]) /
         before_summary_table[minimized_columns]
-    ).fillna(numpy.nan).replace([numpy.nan], [None]).applymap(format_percent)
+    ).fillna(numpy.nan).replace([numpy.nan], [None]).applymap(lambda x: format_percent(x, fractional_digits=1))
 
     combined_diff_table = diff_table.where(
         diff_table == min_diff_table,
