@@ -1,0 +1,10 @@
+{
+    "language": "Solidity",
+    "sources": {
+        "erc20.sol": {"urls": ["../sources/solidity/test/libsolidity/semanticTests/various/erc20.sol"]}
+    },
+    "settings": {
+        "outputSelection": {"erc20.sol": {"ERC20": ["ir"]}},
+        "debug": {"debugInfo": []}
+    }
+}
