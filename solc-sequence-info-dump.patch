@@ -1,16 +1,3 @@
-From 6182cbf17d7ecd91aac51bef7e788352893f807b Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Kamil=20=C5=9Aliwak?= <kamil.sliwak@codepoets.it>
-Date: Mon, 19 Feb 2024 20:58:43 +0100
-Subject: [PATCH] Patch OptimizerSuite to dump info about exact steps used by
- the optimizer and their timing
-
----
- libyul/YulStack.cpp        | 55 ++++++++++++++++++++++++++++++++++++++
- libyul/optimiser/Suite.cpp | 43 +++++++++++++++++------------
- libyul/optimiser/Suite.h   | 14 ++++++++--
- test/tools/yulopti.cpp     |  5 ++--
- 4 files changed, 96 insertions(+), 21 deletions(-)
-
 diff --git a/libyul/YulStack.cpp b/libyul/YulStack.cpp
 index 6c89cadbd..745953fca 100644
 --- a/libyul/YulStack.cpp
@@ -274,6 +261,3 @@ index 20491afe1..a405b8664 100644
  						);
  				}
  				_source = AsmPrinter{m_dialect}(*m_ast);
--- 
-2.43.2
-
